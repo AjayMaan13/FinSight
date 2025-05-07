@@ -1,0 +1,21 @@
+echo "# Node modules
+node_modules/
+.env
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+*.pkl
+
+# Build files
+/client/dist
+/client/build
+
+# Logs
+logs
+*.log
+npm-debug.log*" > .gitignore
