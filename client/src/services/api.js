@@ -1,3 +1,4 @@
+// src/services/api.js
 import axios from 'axios';
 
 const api = axios.create({
@@ -12,21 +13,5 @@ const token = localStorage.getItem('token');
 if (token) {
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Handle 401 Unauthorized - redirect to login
-    if (error.response && error.response.status === 401) {
-      // If not already on login page
-      if (!window.location.pathname.includes('/login')) {
-        localStorage.removeItem('token');
-        window.location.href = '/login?session=expired';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
 
 export default api;
