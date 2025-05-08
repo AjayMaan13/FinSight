@@ -1,49 +1,62 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const db = require('./config/database');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
-// Load environment variables
+// Load env vars
 dotenv.config();
 
-// Create Express app
+// Import routes
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
+
+// Initialize app
 const app = express();
 
-// Database connection
-const db = require('./models');
-
-// Middleware
+// Security middleware
+app.use(helmet());
 app.use(cors());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // 100 requests per windowMs
+});
+app.use('/api/auth', limiter);
+
+// Body parser
 app.use(express.json());
 
-// Basic route
+// Mount routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+
+// Base route
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to FinSight API with PostgreSQL' });
+  res.send('FinSight API is running...');
 });
 
-// Routes will be added here
-// app.use('/api/auth', require('./routes/auth'));
-// app.use('/api/transactions', require('./routes/transactions'));
-// app.use('/api/ml', require('./routes/ml'));
-
-// Error handling middleware
+// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'production' ? {} : err
+    success: false,
+    message: 'Server Error'
   });
 });
 
-// Start server and sync with database
 const PORT = process.env.PORT || 5000;
 
-db.sequelize.sync({ force: false })
+// Sync database and start server
+db.sequelize.sync({ alter: process.env.NODE_ENV === 'development' })
   .then(() => {
-    console.log('Database synchronized successfully');
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
+    console.log('Database connected');
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch(err => {
-    console.error('Failed to sync database:', err);
+    console.error('Failed to connect to database:', err);
   });
+
+module.exports = app;
