@@ -15,3 +15,11 @@ if (token) {
 }
 
 export default api;
+ // In src/services/api.js, add:
+export const createTransaction = (data) => api.post('/transactions', data);
+export const getTransactions = (params) => api.get('/transactions', { params });
+export const getTransaction = (id) => api.get(`/transactions/${id}`);
+export const updateTransaction = (id, data) => api.put(`/transactions/${id}`, data);
+export const deleteTransaction = (id) => api.delete(`/transactions/${id}`);
+export const getTransactionSummary = (params) => api.get('/transactions/summary', { params });
+export const getMonthlyTrends = (params) => api.get('/transactions/monthly', { params });

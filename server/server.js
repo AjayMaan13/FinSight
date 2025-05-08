@@ -5,12 +5,14 @@ const db = require('./config/database');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
+
 // Load env vars
 dotenv.config();
 
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const transactionRoutes = require('./routes/transactions');
 
 // Initialize app
 const app = express();
@@ -32,6 +34,7 @@ app.use(express.json());
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/transactions', transactionRoutes); // Add this line
 
 // Base route
 app.get('/', (req, res) => {

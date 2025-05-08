@@ -1,50 +1,36 @@
-'use strict';
-
+// models/Transactions.js
 module.exports = (sequelize, DataTypes) => {
   const Transaction = sequelize.define('Transaction', {
-    date: {
-      type: DataTypes.DATE,
-      allowNull: false
-    },
     amount: {
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
+      allowNull: false,
     },
     description: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+    },
+    date: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
     },
     category: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: false,
     },
-    merchant: {
-      type: DataTypes.STRING,
-      allowNull: true
+    type: {
+      type: DataTypes.ENUM('income', 'expense'),
+      allowNull: false,
     },
-    isIncome: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
-    isRecurring: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
-    notes: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    }
-  }, {
-    // Model options
-    timestamps: true // Adds createdAt and updatedAt
+    // Add any additional fields you need
   });
   
-  // Associations
-  Transaction.associate = function(models) {
-    // Transaction belongs to a User
+  Transaction.associate = (models) => {
     Transaction.belongsTo(models.User, {
-      foreignKey: 'userId',
-      as: 'user'
+      foreignKey: {
+        name: 'userId',
+        allowNull: false
+      }
     });
   };
   

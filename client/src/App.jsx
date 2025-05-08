@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import Navbar from './components/Navbar';
+import Navbar from './components/Navbar.jsx';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -10,6 +10,11 @@ import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import './App.jsx';
+// In your App.jsx or routing file
+import Transactions from './pages/Transactions';
+
+// ... in your routes
+<Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
 
 function App() {
   return (
