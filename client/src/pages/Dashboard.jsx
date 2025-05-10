@@ -1,7 +1,8 @@
 // src/pages/Dashboard.jsx
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
+import { createTransaction } from "../services/api";
 
 // Example transaction data (for demo)
 const recentTransactions = [
@@ -48,7 +49,6 @@ const handleExport = () => {
   alert("Export functionality coming soon!");
 };
 
-
 // Chart placeholder
 const ChartPlaceholder = () => (
   <div className="flex items-center justify-center h-56 bg-gray-800 rounded-lg border border-gray-700">
@@ -66,46 +66,226 @@ const ChartPlaceholder = () => (
   </div>
 );
 
+// Add Transaction Modal Component
+const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
+  const [form, setForm] = useState({
+    amount: "",
+    description: "",
+    date: new Date().toISOString().split("T")[0],
+    category: "",
+    type: "expense",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const formattedData = {
+        ...form,
+        amount: parseFloat(form.amount),
+      };
+
+      await createTransaction(formattedData);
+      setForm({
+        amount: "",
+        description: "",
+        date: new Date().toISOString().split("T")[0],
+        category: "",
+        type: "expense",
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to add transaction");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-white">Add Transaction</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-900 text-red-300 p-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex gap-4">
+            <div className="w-1/2">
+              <label className="block text-sm font-medium text-gray-300">
+                Amount
+              </label>
+              <input
+                type="number"
+                name="amount"
+                value={form.amount}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                step="0.01"
+                min="0.01"
+              />
+            </div>
+
+            <div className="w-1/2">
+              <label className="block text-sm font-medium text-gray-300">
+                Type
+              </label>
+              <select
+                name="type"
+                value={form.type}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Description
+            </label>
+            <input
+              type="text"
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              required
+              className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex gap-4">
+            <div className="w-1/2">
+              <label className="block text-sm font-medium text-gray-300">
+                Category
+              </label>
+              <input
+                type="text"
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="w-1/2">
+              <label className="block text-sm font-medium text-gray-300">
+                Date
+              </label>
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+            >
+              {loading ? "Adding..." : "Add Transaction"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
 
-  const handleAddTransaction = () => {
-    // Navigate to transactions page and set the active tab to 'add'
-    navigate('/transactions', { state: { activeTab: 'add' } });
-  };
+  const [categories, setCategories] = useState([
+  'Food & Drink',
+  'Groceries',
+  'Transportation',
+  'Shopping',
+  'Utilities',
+  'Entertainment',
+  'Healthcare',
+  'Other'
+]);
 
   return (
     <div>
       <div className="min-h-screen bg-gray-900">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           {/* Dashboard Header */}
-        <div className="md:flex md:items-center md:justify-between">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold leading-7 text-white sm:text-3xl sm:truncate">
-              Welcome back, {user?.firstName || 'User'}!
-            </h1>
-            <p className="mt-1 text-sm text-gray-400">
-              Here's your financial overview for May 2025
-            </p>
+          <div className="md:flex md:items-center md:justify-between">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold leading-7 text-white sm:text-3xl sm:truncate">
+                Welcome back, {user?.firstName || "User"}!
+              </h1>
+              <p className="mt-1 text-sm text-gray-400">
+                Here's your financial overview for May 2025
+              </p>
+            </div>
+            <div className="mt-4 flex md:mt-0 md:ml-4">
+              <button
+                type="button"
+                onClick={handleExport}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+              >
+                Export
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddTransaction(true)}
+                className="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+              >
+                Add Transaction
+              </button>
+            </div>
           </div>
-          <div className="mt-4 flex md:mt-0 md:ml-4">
-            <button
-              type="button"
-              onClick={handleExport}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
-            >
-              Export
-            </button>
-            <button
-              type="button"
-              onClick={handleAddTransaction}
-              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
-            >
-              Add Transaction
-            </button>
-          </div>
-        </div>
 
           {/* Summary Cards */}
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -475,6 +655,13 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      <AddTransactionModal 
+        isOpen={showAddTransaction}
+        onClose={() => setShowAddTransaction(false)}
+        onSuccess={() => {
+          setShowAddTransaction(false);
+        }}
+      />
     </div>
   );
 };

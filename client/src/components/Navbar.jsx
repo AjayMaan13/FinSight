@@ -45,6 +45,7 @@ const handleLogout = () => {
   navigate('/login');
 };
 
+
 // Make sure your logout button calls this function
 <button onClick={handleLogout}>Sign out</button>
 

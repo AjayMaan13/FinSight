@@ -12,6 +12,7 @@ import ResetPassword from './pages/ResetPassword';
 import Transactions from './pages/Transactions';
 import Goals from './pages/Goals';
 import Insights from './pages/Insights';
+import Settings from './pages/Settings.jsx';
 
 function App() {
   return (
@@ -41,6 +42,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 } 
               />
