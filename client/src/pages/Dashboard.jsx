@@ -1,8 +1,8 @@
 // src/pages/Dashboard.jsx
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
 
 // Example transaction data (for demo)
 const recentTransactions = [
@@ -12,6 +12,12 @@ const recentTransactions = [
   { id: 4, name: 'Grocery Store', amount: -65.75, date: '2025-05-05', category: 'Groceries' },
   { id: 5, name: 'Online Shopping', amount: -39.99, date: '2025-05-06', category: 'Shopping' },
 ];
+
+const handleExport = () => {
+  // For now, just show an alert
+  // Later you can implement actual CSV export
+  alert('Export functionality coming soon!');
+};
 
 // Chart placeholder
 const ChartPlaceholder = () => (
@@ -32,32 +38,12 @@ const ChartPlaceholder = () => (
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
-  const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleEmergencyLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   return (
     <div>
-      {/* Add this prominently at the top of your dashboard */}
-      <button 
-  onClick={handleEmergencyLogout}
-  style={{
-    position: 'fixed',
-    top: '20px',
-    right: '20px',
-    padding: '10px',
-    background: 'red',
-    color: 'white',
-    fontWeight: 'bold',
-    zIndex: 9999
-  }}
->
-  Log Out
-</button>
+
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Dashboard Header */}
@@ -72,17 +58,19 @@ const Dashboard = () => {
           </div>
           <div className="mt-4 flex md:mt-0 md:ml-4">
             <button
-              type="button"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
-            >
-              Export
-            </button>
+  type="button"
+  onClick={handleExport}
+  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+>
+  Export
+</button>
             <button
-              type="button"
-              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
-            >
-              Add Transaction
-            </button>
+  type="button"
+  onClick={() => navigate('/transactions')}
+  className="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+>
+  Add Transaction
+</button>
           </div>
         </div>
 

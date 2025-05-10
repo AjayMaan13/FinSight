@@ -165,28 +165,42 @@ const Transactions = () => {
   const [activeTab, setActiveTab] = useState('list'); // Add this state
 
   const fetchTransactions = async () => {
-    setLoading(true);
-    try {
-      const response = await getTransactions({ 
-        page, 
-        limit: 10,
-        ...filters
-      });
-      setTransactions(response.data.transactions || []);
-      setTotalPages(response.data.totalPages || 1);
-      
-      // Extract unique categories
-      if (response.data.transactions) {
-        const uniqueCategories = [...new Set(response.data.transactions.map(t => t.category))];
-        setCategories(uniqueCategories);
-      }
-    } catch (err) {
-      setError('Failed to load transactions');
-      console.error(err);
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      page,
+      limit: 10,
+      sort: filters.sort,
+      order: filters.order
+    });
+
+    // Add filters only if they have values
+    if (filters.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters.endDate) queryParams.append('endDate', filters.endDate);
+    if (filters.category) queryParams.append('category', filters.category);
+    if (filters.type) queryParams.append('type', filters.type);
+
+    const response = await getTransactions(Object.fromEntries(queryParams));
+    
+    // Make sure we're getting the data correctly
+    const transactionData = response.data?.transactions || response.data || [];
+    setTransactions(Array.isArray(transactionData) ? transactionData : []);
+    setTotalPages(response.data?.totalPages || 1);
+    
+    // Extract unique categories
+    if (transactionData.length > 0) {
+      const uniqueCategories = [...new Set(transactionData.map(t => t.category))];
+      setCategories(uniqueCategories);
     }
-  };
+  } catch (err) {
+    setError('Failed to load transactions');
+    console.error('Transaction fetch error:', err);
+    setTransactions([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchTransactions();

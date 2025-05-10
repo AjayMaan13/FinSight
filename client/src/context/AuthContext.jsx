@@ -23,117 +23,114 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Load user if token exists
-  const loadUser = async () => {
-    if (token) {
-      setAuthToken(token);
-      
-      try {
-        // Temporarily mock user data for development
-        // In production, this would be a real API call
-        // const res = await api.get('/api/auth/me');
-        // setUser(res.data.user);
-        
-        // Mock user data for development
+  // src/context/AuthContext.jsx
+
+// Update the loadUser function
+const loadUser = async () => {
+  if (token) {
+    setAuthToken(token);
+    
+    try {
+      // For now, use the user data from registration/login
+      // This should be replaced with a real API call later
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      } else {
+        // Default mock user - update this with your actual name
         setUser({
           id: '123',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com'
+          firstName: 'Your', // Replace with your first name
+          lastName: 'Name',  // Replace with your last name
+          email: 'your.email@example.com'
         });
-        
-        setIsAuthenticated(true);
-      } catch (err) {
-        console.error('Error loading user:', err);
-        setToken(null);
-        setUser(null);
-        setIsAuthenticated(false);
-        setAuthToken(null);
       }
+      
+      setIsAuthenticated(true);
+    } catch (err) {
+      console.error('Error loading user:', err);
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+      setAuthToken(null);
     }
+  }
+  
+  setLoading(false);
+};
+
+// Update the login function to store user data
+const login = async (formData) => {
+  try {
+    setError(null);
     
-    setLoading(false);
-  };
-
-  // Register user
-  const register = async (formData) => {
-    try {
-      setError(null);
-      
-      // In production, this would be a real API call
-      // const res = await api.post('/api/auth/register', formData);
-      
-      // Mock successful registration
-      const mockRes = {
-        data: {
-          token: 'mock-token-123',
-          user: {
-            id: '123',
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email
-          }
+    // Mock successful login - save user data
+    const mockRes = {
+      data: {
+        token: 'mock-token-123',
+        user: {
+          id: '123',
+          firstName: formData.email.split('@')[0], // Use email prefix as name
+          lastName: 'User',
+          email: formData.email
         }
-      };
-      
-      setToken(mockRes.data.token);
-      setUser(mockRes.data.user);
-      setIsAuthenticated(true);
-      setAuthToken(mockRes.data.token);
-      
-      return { success: true };
-    } catch (err) {
-      setError(
-        err.response?.data?.message || 
-        'Registration failed. Please try again.'
-      );
-      return { success: false, error: err.response?.data?.message };
-    }
-  };
+      }
+    };
+    
+    setToken(mockRes.data.token);
+    setUser(mockRes.data.user);
+    setIsAuthenticated(true);
+    setAuthToken(mockRes.data.token);
+    
+    // Store user data in localStorage
+    localStorage.setItem('user', JSON.stringify(mockRes.data.user));
+    
+    return { success: true };
+  } catch (err) {
+    setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    return { success: false, error: err.response?.data?.message };
+  }
+};
 
-  // Login user
-  const login = async (formData) => {
-    try {
-      setError(null);
-      
-      // In production, this would be a real API call
-      // const res = await api.post('/api/auth/login', formData);
-      
-      // Mock successful login
-      const mockRes = {
-        data: {
-          token: 'mock-token-123',
-          user: {
-            id: '123',
-            firstName: 'John',
-            lastName: 'Doe',
-            email: formData.email
-          }
+// Update the register function similarly
+const register = async (formData) => {
+  try {
+    setError(null);
+    
+    const mockRes = {
+      data: {
+        token: 'mock-token-123',
+        user: {
+          id: '123',
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email
         }
-      };
-      
-      setToken(mockRes.data.token);
-      setUser(mockRes.data.user);
-      setIsAuthenticated(true);
-      setAuthToken(mockRes.data.token);
-      
-      return { success: true };
-    } catch (err) {
-      setError(
-        err.response?.data?.message || 
-        'Login failed. Please check your credentials.'
-      );
-      return { success: false, error: err.response?.data?.message };
-    }
-  };
+      }
+    };
+    
+    setToken(mockRes.data.token);
+    setUser(mockRes.data.user);
+    setIsAuthenticated(true);
+    setAuthToken(mockRes.data.token);
+    
+    // Store user data in localStorage
+    localStorage.setItem('user', JSON.stringify(mockRes.data.user));
+    
+    return { success: true };
+  } catch (err) {
+    setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    return { success: false, error: err.response?.data?.message };
+  }
+};
 
-
-  // In your AuthContext.jsx
+// Update logout to clear stored user data
 const logout = () => {
   localStorage.removeItem('token');
+  localStorage.removeItem('user'); // Add this line
   setToken(null);
   setUser(null);
   setIsAuthenticated(false);
-  // Also clear any Authorization headers in your API service
   delete api.defaults.headers.common['Authorization'];
 };
 

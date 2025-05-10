@@ -10,7 +10,8 @@ import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Transactions from './pages/Transactions';
-// Remove the incorrect import: import './App.jsx';
+import Goals from './pages/Goals';
+import Insights from './pages/Insights';
 
 function App() {
   return (
@@ -55,6 +56,22 @@ function App() {
               {/* Default routes */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route 
+                  path="/goals" 
+                  element={
+                    <ProtectedRoute>
+                      <Goals />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/insights" 
+                  element={
+                    <ProtectedRoute>
+                      <Insights />
+                    </ProtectedRoute>
+                  } 
+                />
             </Routes>
           </main>
           <footer className="bg-gray-800 py-4 border-t border-gray-700">
