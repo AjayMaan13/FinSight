@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { User } = require('../config/database');
+const { User } = require('../models'); // Changed from '../config/database'
 const { generateToken } = require('../config/jwt');
 
 // @desc    Register user

@@ -2,6 +2,11 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    // Create enum type
+    await queryInterface.sequelize.query(`
+      CREATE TYPE "enum_budgets_period" AS ENUM ('weekly', 'monthly', 'yearly');
+    `).catch(() => {});
+
     await queryInterface.createTable('budgets', {
       id: {
         type: Sequelize.UUID,
@@ -70,5 +75,8 @@ module.exports = {
 
   down: async (queryInterface, Sequelize) => {
     await queryInterface.dropTable('budgets');
+    await queryInterface.sequelize.query(`
+      DROP TYPE IF EXISTS "enum_budgets_period";
+    `);
   }
 };

@@ -1,16 +1,15 @@
-// routes/transactions.js
 const express = require('express');
 const router = express.Router();
 const transactionController = require('../controllers/transactionController');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 
 // Apply authentication middleware to all transaction routes
-router.use(authenticateToken);
+router.use(protect);
 
 // Transaction routes
+router.get('/summary', transactionController.getTransactionSummary);
 router.get('/monthly', transactionController.getMonthlyTrends);
 router.get('/', transactionController.getTransactions);
-router.get('/summary', transactionController.getTransactionSummary);
 router.get('/:id', transactionController.getTransaction);
 router.post('/', transactionController.createTransaction);
 router.put('/:id', transactionController.updateTransaction);

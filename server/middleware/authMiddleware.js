@@ -1,9 +1,8 @@
-const { verifyToken } = require('../config/jwt');
-const { User } = require('../config/database');
+const { protect } = require('../config/jwt');
+const { User } = require('../models');
 
 exports.protect = async (req, res, next) => {
   try {
-    // Get token from header
     let token;
     
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -18,6 +17,7 @@ exports.protect = async (req, res, next) => {
     }
 
     // Verify token
+    const { verifyToken } = require('../config/jwt');
     const decoded = verifyToken(token);
     
     if (!decoded) {
@@ -39,35 +39,13 @@ exports.protect = async (req, res, next) => {
       });
     }
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated'
-      });
-    }
-
-    // Set user in request
     req.user = user;
-    
     next();
   } catch (error) {
     console.error(error);
     res.status(401).json({
       success: false,
       message: 'Not authorized'
-    });
-  }
-};
-
-// Optional: Middleware for admin access
-exports.admin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({
-      success: false,
-      message: 'Not authorized as an admin'
     });
   }
 };

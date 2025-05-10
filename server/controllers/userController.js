@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
-const { User } = require('../config/database');
+const { User } = require('../models'); // Changed from '../config/database'
+
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile

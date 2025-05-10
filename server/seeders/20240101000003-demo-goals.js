@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // First, get a user ID to associate goals with
+    // Get a user to associate goals with
     const users = await queryInterface.sequelize.query(
       'SELECT id FROM users LIMIT 1',
       { type: queryInterface.sequelize.QueryTypes.SELECT }
@@ -41,20 +41,6 @@ module.exports = {
         target_date: new Date(currentDate.getFullYear() + 1, 6, 15),
         category: 'Travel',
         priority: 'medium',
-        status: 'active',
-        user_id: userId,
-        created_at: new Date(),
-        updated_at: new Date()
-      },
-      {
-        id: uuidv4(),
-        name: 'New Laptop',
-        description: 'Save for a new MacBook Pro',
-        target_amount: 2500.00,
-        current_amount: 1200.00,
-        target_date: new Date(currentDate.getFullYear(), currentDate.getMonth() + 6, 1),
-        category: 'Technology',
-        priority: 'low',
         status: 'active',
         user_id: userId,
         created_at: new Date(),

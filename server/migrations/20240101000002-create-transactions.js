@@ -2,6 +2,13 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    // Create the enum type for transaction types
+    await queryInterface.sequelize.query(`
+      CREATE TYPE "enum_transactions_type" AS ENUM ('income', 'expense');
+    `).catch(() => {
+      // Type might already exist
+    });
+
     await queryInterface.createTable('transactions', {
       id: {
         type: Sequelize.UUID,
@@ -69,5 +76,8 @@ module.exports = {
 
   down: async (queryInterface, Sequelize) => {
     await queryInterface.dropTable('transactions');
+    await queryInterface.sequelize.query(`
+      DROP TYPE IF EXISTS "enum_transactions_type";
+    `);
   }
 };

@@ -1,40 +1,31 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const db = require('./config/database');
-const rateLimit = require('express-rate-limit');
-const helmet = require('helmet');
-
 
 // Load env vars
 dotenv.config();
+
+// Import database - use index.js instead of database.js
+const db = require('./models');
 
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
+// const goalRoutes = require('./routes/goals'); // Uncomment when you create this file
 
 // Initialize app
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Middleware
 app.use(cors());
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // 100 requests per windowMs
-});
-app.use('/api/auth', limiter);
-
-// Body parser
 app.use(express.json());
 
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/transactions', transactionRoutes); // Add this line
+app.use('/api/transactions', transactionRoutes);
+// app.use('/api/goals', goalRoutes); // Uncomment when you create this file
 
 // Base route
 app.get('/', (req, res) => {
