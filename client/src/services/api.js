@@ -15,7 +15,8 @@ if (token) {
 }
 
 export default api;
- // In src/services/api.js, add:
+
+// Transaction endpoints
 export const createTransaction = (data) => api.post('/transactions', data);
 export const getTransactions = (params) => api.get('/transactions', { params });
 export const getTransaction = (id) => api.get(`/transactions/${id}`);
@@ -24,3 +25,11 @@ export const deleteTransaction = (id) => api.delete(`/transactions/${id}`);
 export const getTransactionSummary = (params) => api.get('/transactions/summary', { params });
 export const getMonthlyTrends = (params) => api.get('/transactions/monthly', { params });
 export const importFromCSV = (data) => api.post('/transactions/import', data);
+
+// Goal endpoints
+export const createGoal = (data) => api.post('/goals', data);
+export const getGoals = (params) => api.get('/goals', { params });
+export const getGoal = (id) => api.get(`/goals/${id}`);
+export const updateGoal = (id, data) => api.put(`/goals/${id}`, data);
+export const deleteGoal = (id) => api.delete(`/goals/${id}`);
+export const getGoalProgress = (id) => api.get(`/goals/${id}/progress`);

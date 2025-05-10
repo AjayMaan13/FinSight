@@ -52,26 +52,26 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              
+              <Route 
+                path="/goals" 
+                element={
+                  <ProtectedRoute>
+                    <Goals />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/insights" 
+                element={
+                  <ProtectedRoute>
+                    <Insights />
+                  </ProtectedRoute>
+                } 
+              />
+
               {/* Default routes */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              <Route 
-                  path="/goals" 
-                  element={
-                    <ProtectedRoute>
-                      <Goals />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/insights" 
-                  element={
-                    <ProtectedRoute>
-                      <Insights />
-                    </ProtectedRoute>
-                  } 
-                />
             </Routes>
           </main>
           <footer className="bg-gray-800 py-4 border-t border-gray-700">
