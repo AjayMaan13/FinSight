@@ -9,12 +9,8 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import './App.jsx';
-// In your App.jsx or routing file
 import Transactions from './pages/Transactions';
-
-// ... in your routes
-<Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+// Remove the incorrect import: import './App.jsx';
 
 function App() {
   return (
@@ -44,6 +40,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/transactions" 
+                element={
+                  <ProtectedRoute>
+                    <Transactions />
                   </ProtectedRoute>
                 } 
               />

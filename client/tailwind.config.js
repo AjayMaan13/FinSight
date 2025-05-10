@@ -1,7 +1,4 @@
 /** @type {import('tailwindcss').Config} */
-import tailwindForms from '@tailwindcss/forms';
-import tailwindTypography from '@tailwindcss/typography';
-
 export default {
   content: [
     "./index.html",
@@ -10,8 +7,5 @@ export default {
   theme: {
     extend: {},
   },
-  plugins: [
-    tailwindForms,
-    tailwindTypography,
-  ],
+  plugins: [],
 }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getTransactions, deleteTransaction, updateTransaction } from '../services/api';
+import ImportTransactions from '../components/transactions/ImportTransactions';
 
 const TransactionEditModal = ({ transaction, onClose, onSave }) => {
   const [form, setForm] = useState({
@@ -161,6 +162,7 @@ const Transactions = () => {
   });
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [activeTab, setActiveTab] = useState('list'); // Add this state
 
   const fetchTransactions = async () => {
     setLoading(true);
@@ -258,262 +260,297 @@ const Transactions = () => {
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="bg-gray-800 rounded-lg shadow p-6 mb-8 border border-gray-700">
-          <h2 className="text-xl font-semibold text-white mb-4">Filter Transactions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                value={filters.startDate}
-                onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300">End Date</label>
-              <input
-                type="date"
-                name="endDate"
-                value={filters.endDate}
-                onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Category</label>
-              <select
-                name="category"
-                value={filters.category}
-                onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">All Categories</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Type</label>
-              <select
-                name="type"
-                value={filters.type}
-                onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">All Types</option>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Sort By</label>
-              <select
-                name="sort"
-                value={filters.sort}
-                onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="date">Date</option>
-                <option value="amount">Amount</option>
-                <option value="category">Category</option>
-                <option value="description">Description</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300">Order</label>
-              <select
-                name="order"
-                value={filters.order}
-                onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="DESC">Descending</option>
-                <option value="ASC">Ascending</option>
-              </select>
-            </div>
-          </div>
-          
-          <div className="mt-4 flex justify-end">
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-700">
+          <nav className="-mb-px flex" aria-label="Tabs">
             <button
-              onClick={() => setFilters({
-                startDate: '',
-                endDate: '',
-                category: '',
-                type: '',
-                sort: 'date',
-                order: 'DESC'
-              })}
-              className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+              onClick={() => setActiveTab('list')}
+              className={`${
+                activeTab === 'list'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm mr-8`}
             >
-              Clear Filters
+              Transaction List
             </button>
-          </div>
+            <button
+              onClick={() => setActiveTab('import')}
+              className={`${
+                activeTab === 'import'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              Import Transactions
+            </button>
+          </nav>
         </div>
 
-        {/* Transactions Table */}
-        <div className="bg-gray-800 rounded-lg shadow border border-gray-700">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">All Transactions</h2>
-            
-            {loading ? (
-              <div className="text-center py-8">
-                <svg className="animate-spin h-8 w-8 text-blue-500 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="text-gray-400">Loading transactions...</p>
-              </div>
-            ) : error ? (
-              <div className="bg-red-900 text-red-300 p-3 rounded mb-4">
-                {error}
-              </div>
-            ) : transactions.length === 0 ? (
-              <div className="text-center py-8">
-                <svg className="h-12 w-12 text-gray-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p className="text-gray-400 mb-2">No transactions found</p>
-                <p className="text-gray-500 text-sm">Try adjusting your filters or add a new transaction</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-700">
-                  <thead className="bg-gray-700">
-                    <tr>
-                      <th 
-                        scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
-                        onClick={() => handleSort('date')}
-                      >
-                        <div className="flex items-center">
-                          Date
-                          {filters.sort === 'date' && (
-                            <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                            </svg>
-                          )}
-                        </div>
-                      </th>
-                      <th 
-                        scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
-                        onClick={() => handleSort('description')}
-                      >
-                        <div className="flex items-center">
-                          Description
-                          {filters.sort === 'description' && (
-                            <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                            </svg>
-                          )}
-                        </div>
-                      </th>
-                      <th 
-                        scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
-                        onClick={() => handleSort('category')}
-                      >
-                        <div className="flex items-center">
-                          Category
-                          {filters.sort === 'category' && (
-                            <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                            </svg>
-                          )}
-                        </div>
-                      </th>
-                      <th 
-                        scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
-                        onClick={() => handleSort('amount')}
-                      >
-                        <div className="flex items-center">
-                          Amount
-                          {filters.sort === 'amount' && (
-                            <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                            </svg>
-                          )}
-                        </div>
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-gray-800 divide-y divide-gray-700">
-                    {transactions.map((transaction) => (
-                      <tr key={transaction.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          {new Date(transaction.date).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                          {transaction.description}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          {transaction.category}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                          transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
-                        }`}>
-                          {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          <button 
-                            onClick={() => handleEditTransaction(transaction)} 
-                            className="text-blue-400 hover:text-blue-300 mr-3"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteTransaction(transaction.id)} 
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
+        {activeTab === 'list' ? (
+          <>
+            {/* Filters */}
+            <div className="bg-gray-800 rounded-lg shadow p-6 mb-8 border border-gray-700">
+              <h2 className="text-xl font-semibold text-white mb-4">Filter Transactions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Start Date</label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={filters.startDate}
+                    onChange={handleFilterChange}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">End Date</label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={filters.endDate}
+                    onChange={handleFilterChange}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Category</label>
+                  <select
+                    name="category"
+                    value={filters.category}
+                    onChange={handleFilterChange}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            
-            {/* Pagination */}
-            {!loading && transactions.length > 0 && (
-              <div className="mt-6 flex justify-between items-center">
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
+                  </select>
+                </div>
                 
-                <span className="text-sm text-gray-400">
-                  Page {page} of {totalPages}
-                </span>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Type</label>
+                  <select
+                    name="type"
+                    value={filters.type}
+                    onChange={handleFilterChange}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">All Types</option>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                  </select>
+                </div>
                 
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Sort By</label>
+                  <select
+                    name="sort"
+                    value={filters.sort}
+                    onChange={handleFilterChange}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="date">Date</option>
+                    <option value="amount">Amount</option>
+                    <option value="category">Category</option>
+                    <option value="description">Description</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Order</label>
+                  <select
+                    name="order"
+                    value={filters.order}
+                    onChange={handleFilterChange}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="DESC">Descending</option>
+                    <option value="ASC">Ascending</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="mt-4 flex justify-end">
                 <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page === totalPages || totalPages === 0}
-                  className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setFilters({
+                    startDate: '',
+                    endDate: '',
+                    category: '',
+                    type: '',
+                    sort: 'date',
+                    order: 'DESC'
+                  })}
+                  className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
                 >
-                  Next
+                  Clear Filters
                 </button>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+
+            {/* Transactions Table */}
+            <div className="bg-gray-800 rounded-lg shadow border border-gray-700">
+              <div className="p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">All Transactions</h2>
+                
+                {loading ? (
+                  <div className="text-center py-8">
+                    <svg className="animate-spin h-8 w-8 text-blue-500 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-gray-400">Loading transactions...</p>
+                  </div>
+                ) : error ? (
+                  <div className="bg-red-900 text-red-300 p-3 rounded mb-4">
+                    {error}
+                  </div>
+                ) : transactions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <svg className="h-12 w-12 text-gray-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-gray-400 mb-2">No transactions found</p>
+                    <p className="text-gray-500 text-sm">Try adjusting your filters or add a new transaction</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-700">
+                      <thead className="bg-gray-700">
+                        <tr>
+                          <th 
+                            scope="col" 
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                            onClick={() => handleSort('date')}
+                          >
+                            <div className="flex items-center">
+                              Date
+                              {filters.sort === 'date' && (
+                                <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                                </svg>
+                              )}
+                            </div>
+                          </th>
+                          <th 
+                            scope="col" 
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                            onClick={() => handleSort('description')}
+                          >
+                            <div className="flex items-center">
+                              Description
+                              {filters.sort === 'description' && (
+                                <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                                </svg>
+                              )}
+                            </div>
+                          </th>
+                          <th 
+                            scope="col" 
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                            onClick={() => handleSort('category')}
+                          >
+                            <div className="flex items-center">
+                              Category
+                              {filters.sort === 'category' && (
+                                <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                                </svg>
+                              )}
+                            </div>
+                          </th>
+                          <th 
+                            scope="col" 
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
+                            onClick={() => handleSort('amount')}
+                          >
+                            <div className="flex items-center">
+                              Amount
+                              {filters.sort === 'amount' && (
+                                <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                                </svg>
+                              )}
+                            </div>
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-gray-800 divide-y divide-gray-700">
+                        {transactions.map((transaction) => (
+                          <tr key={transaction.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {new Date(transaction.date).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                              {transaction.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {transaction.category}
+                            </td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                              transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                            }`}>
+                              {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              <button 
+                                onClick={() => handleEditTransaction(transaction)} 
+                                className="text-blue-400 hover:text-blue-300 mr-3"
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteTransaction(transaction.id)} 
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                
+                {/* Pagination */}
+                {!loading && transactions.length > 0 && (
+                  <div className="mt-6 flex justify-between items-center">
+                    <button
+                      onClick={() => setPage(Math.max(1, page - 1))}
+                      disabled={page === 1}
+                      className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    
+                    <span className="text-sm text-gray-400">
+                      Page {page} of {totalPages}
+                    </span>
+                    
+                    <button
+                      onClick={() => setPage(Math.min(totalPages, page + 1))}
+                      disabled={page === totalPages || totalPages === 0}
+                      className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <ImportTransactions onSuccess={() => {
+            fetchTransactions();
+            setActiveTab('list');
+          }} />
+        )}
       </div>
       
       {/* Edit Transaction Modal */}

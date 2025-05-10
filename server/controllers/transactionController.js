@@ -242,3 +242,34 @@ exports.getMonthlyTrends = async (req, res) => {
     res.status(500).json({ error: 'Failed to get monthly trends' });
   }
 };
+
+// Import transactions from CSV
+exports.importFromCSV = async (req, res) => {
+  try {
+    const { transactions } = req.body;
+    
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+      return res.status(400).json({ error: 'Invalid transaction data format' });
+    }
+    
+    // Validate and format each transaction
+    const formattedTransactions = transactions.map(t => ({
+      amount: parseFloat(t.amount),
+      description: t.description,
+      date: new Date(t.date),
+      category: t.category,
+      type: t.type.toLowerCase(),
+      userId: req.user.id
+    }));
+    
+    // Bulk create transactions
+    await Transaction.bulkCreate(formattedTransactions);
+    
+    res.status(201).json({ 
+      message: `Successfully imported ${formattedTransactions.length} transactions` 
+    });
+  } catch (error) {
+    console.error('Error importing transactions:', error);
+    res.status(500).json({ error: 'Failed to import transactions' });
+  }
+};

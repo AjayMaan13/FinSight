@@ -15,5 +15,6 @@ router.get('/:id', transactionController.getTransaction);
 router.post('/', transactionController.createTransaction);
 router.put('/:id', transactionController.updateTransaction);
 router.delete('/:id', transactionController.deleteTransaction);
+router.post('/import', transactionController.importFromCSV);
 
 module.exports = router;

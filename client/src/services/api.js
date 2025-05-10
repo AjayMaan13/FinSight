@@ -23,3 +23,4 @@ export const updateTransaction = (id, data) => api.put(`/transactions/${id}`, da
 export const deleteTransaction = (id) => api.delete(`/transactions/${id}`);
 export const getTransactionSummary = (params) => api.get('/transactions/summary', { params });
 export const getMonthlyTrends = (params) => api.get('/transactions/monthly', { params });
+export const importFromCSV = (data) => api.post('/transactions/import', data);
