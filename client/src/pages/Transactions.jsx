@@ -1,8 +1,10 @@
 // src/pages/Transactions.jsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getTransactions, deleteTransaction, updateTransaction } from '../services/api';
+import { updateTransaction } from '../services/api';
+//import { getTransactions, deleteTransaction, updateTransaction } from '../services/api';
 import ImportTransactions from '../components/transactions/ImportTransactions';
+import TransactionForm from '../components/transactions/TransactionForm';
 
 const TransactionEditModal = ({ transaction, onClose, onSave }) => {
   const [form, setForm] = useState({
@@ -150,8 +152,11 @@ const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  /*
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  */
+  const [setPage] = useState(1);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -162,49 +167,97 @@ const Transactions = () => {
   });
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [activeTab, setActiveTab] = useState('list'); // Add this state
+  const [activeTab, setActiveTab] = useState('list');
+
+  // Store all transactions separately for local filtering
+  const [allTransactions, setAllTransactions] = useState([]);
+  
+  // Initialize with some demo data if needed
+  useEffect(() => {
+    // Demo data
+    const demoTransactions = [
+      { id: 1, description: 'Coffee Shop', amount: 4.50, date: '2025-05-07', category: 'Food & Drink', type: 'expense' },
+      { id: 2, description: 'Paycheck', amount: 2500.00, date: '2025-05-01', category: 'Income', type: 'income' },
+      { id: 3, description: 'Electric Bill', amount: 95.20, date: '2025-05-03', category: 'Utilities', type: 'expense' },
+      { id: 4, description: 'Grocery Store', amount: 65.75, date: '2025-05-05', category: 'Groceries', type: 'expense' },
+      { id: 5, description: 'Online Shopping', amount: 39.99, date: '2025-05-06', category: 'Shopping', type: 'expense' },
+    ];
+
+    setAllTransactions(demoTransactions);
+    setTransactions(demoTransactions);
+    setLoading(false);
+    
+    // Extract categories
+    const uniqueCategories = [...new Set(demoTransactions.map(t => t.category))];
+    setCategories(uniqueCategories);
+  }, []);
 
   const fetchTransactions = async () => {
-  setLoading(true);
-  try {
-    // Build query parameters
-    const queryParams = new URLSearchParams({
-      page,
-      limit: 10,
-      sort: filters.sort,
-      order: filters.order
-    });
-
-    // Add filters only if they have values
-    if (filters.startDate) queryParams.append('startDate', filters.startDate);
-    if (filters.endDate) queryParams.append('endDate', filters.endDate);
-    if (filters.category) queryParams.append('category', filters.category);
-    if (filters.type) queryParams.append('type', filters.type);
-
-    const response = await getTransactions(Object.fromEntries(queryParams));
-    
-    // Make sure we're getting the data correctly
-    const transactionData = response.data?.transactions || response.data || [];
-    setTransactions(Array.isArray(transactionData) ? transactionData : []);
-    setTotalPages(response.data?.totalPages || 1);
-    
-    // Extract unique categories
-    if (transactionData.length > 0) {
-      const uniqueCategories = [...new Set(transactionData.map(t => t.category))];
-      setCategories(uniqueCategories);
+    setLoading(true);
+    try {
+      // For now, just use demo data
+      // In a real app, you'd make an API call here
+      setTransactions(allTransactions);
+      setLoading(false);
+    } catch (err) {
+      setError('Failed to load transactions');
+      console.error('Transaction fetch error:', err);
+      setTransactions([]);
+      setLoading(false);
     }
-  } catch (err) {
-    setError('Failed to load transactions');
-    console.error('Transaction fetch error:', err);
-    setTransactions([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
+  // Filter transactions locally when filters change
   useEffect(() => {
-    fetchTransactions();
-  }, [page, filters]);
+    let filtered = [...allTransactions];
+    
+    // Apply filters
+    if (filters.type) {
+      filtered = filtered.filter(t => t.type === filters.type);
+    }
+    if (filters.category) {
+      filtered = filtered.filter(t => t.category === filters.category);
+    }
+    if (filters.startDate) {
+      filtered = filtered.filter(t => t.date >= filters.startDate);
+    }
+    if (filters.endDate) {
+      filtered = filtered.filter(t => t.date <= filters.endDate);
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aVal, bVal;
+      
+      switch (filters.sort) {
+        case 'amount':
+          aVal = a.amount;
+          bVal = b.amount;
+          break;
+        case 'category':
+          aVal = a.category;
+          bVal = b.category;
+          break;
+        case 'description':
+          aVal = a.description;
+          bVal = b.description;
+          break;
+        case 'date':
+        default:
+          aVal = new Date(a.date);
+          bVal = new Date(b.date);
+          break;
+      }
+      
+      if (filters.order === 'ASC') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+    
+    setTransactions(filtered);
+  }, [filters, allTransactions]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -223,8 +276,16 @@ const Transactions = () => {
   const handleDeleteTransaction = async (id) => {
     if (confirm('Are you sure you want to delete this transaction?')) {
       try {
-        await deleteTransaction(id);
-        fetchTransactions();
+        // For demo, just remove from local state
+        const updatedTransactions = allTransactions.filter(t => t.id !== id);
+        setAllTransactions(updatedTransactions);
+        setTransactions(updatedTransactions.filter(t => {
+          // Apply current filters
+          return (!filters.type || t.type === filters.type) &&
+                 (!filters.category || t.category === filters.category) &&
+                 (!filters.startDate || t.date >= filters.startDate) &&
+                 (!filters.endDate || t.date <= filters.endDate);
+        }));
       } catch (error) {
         console.error('Failed to delete transaction:', error);
         alert('Failed to delete transaction');
@@ -250,6 +311,11 @@ const Transactions = () => {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  };
+
+  const handleAddTransaction = () => {
+    fetchTransactions();
+    setActiveTab('list');
   };
 
   return (
@@ -286,6 +352,16 @@ const Transactions = () => {
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm mr-8`}
             >
               Transaction List
+            </button>
+            <button
+              onClick={() => setActiveTab('add')}
+              className={`${
+                activeTab === 'add'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm mr-8`}
+            >
+              Add Transaction
             </button>
             <button
               onClick={() => setActiveTab('import')}
@@ -436,48 +512,6 @@ const Transactions = () => {
                           <th 
                             scope="col" 
                             className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
-                            onClick={() => handleSort('date')}
-                          >
-                            <div className="flex items-center">
-                              Date
-                              {filters.sort === 'date' && (
-                                <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                                </svg>
-                              )}
-                            </div>
-                          </th>
-                          <th 
-                            scope="col" 
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
-                            onClick={() => handleSort('description')}
-                          >
-                            <div className="flex items-center">
-                              Description
-                              {filters.sort === 'description' && (
-                                <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                                </svg>
-                              )}
-                            </div>
-                          </th>
-                          <th 
-                            scope="col" 
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
-                            onClick={() => handleSort('category')}
-                          >
-                            <div className="flex items-center">
-                              Category
-                              {filters.sort === 'category' && (
-                                <svg className="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={filters.order === 'ASC' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                                </svg>
-                              )}
-                            </div>
-                          </th>
-                          <th 
-                            scope="col" 
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:text-white"
                             onClick={() => handleSort('amount')}
                           >
                             <div className="flex items-center">
@@ -531,34 +565,14 @@ const Transactions = () => {
                     </table>
                   </div>
                 )}
-                
-                {/* Pagination */}
-                {!loading && transactions.length > 0 && (
-                  <div className="mt-6 flex justify-between items-center">
-                    <button
-                      onClick={() => setPage(Math.max(1, page - 1))}
-                      disabled={page === 1}
-                      className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    
-                    <span className="text-sm text-gray-400">
-                      Page {page} of {totalPages}
-                    </span>
-                    
-                    <button
-                      onClick={() => setPage(Math.min(totalPages, page + 1))}
-                      disabled={page === totalPages || totalPages === 0}
-                      className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </>
+        ) : activeTab === 'add' ? (
+          <div className="bg-gray-800 rounded-lg shadow border border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Add New Transaction</h2>
+            <TransactionForm onSuccess={handleAddTransaction} />
+          </div>
         ) : (
           <ImportTransactions onSuccess={() => {
             fetchTransactions();
