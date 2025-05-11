@@ -2,6 +2,7 @@
 const { Transaction } = require('../models');
 const { Op } = require('sequelize');
 
+
 // Get all transactions for the authenticated user
 exports.getTransactions = async (req, res) => {
   try {
@@ -176,6 +177,8 @@ exports.getTransactionSummary = async (req, res) => {
       group: ['category'],
       order: [[sequelize.literal('total'), 'DESC']]
     });
+    
+    console.log('Summary data:', { income, expenses }); // Debug log
     
     res.json({
       totalIncome: parseFloat(income),

@@ -1,16 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
+const {
+  getGoals,
+  getGoal,
+  createGoal,
+  updateGoal,
+  deleteGoal,
+  updateGoalProgress,
+  getGoalStats
+} = require('../controllers/goalController');
+const { validateGoal, validateGoalProgress, validateUUID } = require('../middleware/validation');
 
-// Apply authentication middleware
+// Apply authentication middleware to all routes
 router.use(protect);
 
-// Placeholder routes - controllers will be created later
-router.get('/', (req, res) => res.json({ message: 'Get all goals' }));
-router.get('/:id', (req, res) => res.json({ message: 'Get single goal' }));
-router.post('/', (req, res) => res.json({ message: 'Create goal' }));
-router.put('/:id', (req, res) => res.json({ message: 'Update goal' }));
-router.delete('/:id', (req, res) => res.json({ message: 'Delete goal' }));
-router.put('/:id/progress', (req, res) => res.json({ message: 'Update goal progress' }));
+// Goal routes
+router.get('/stats', getGoalStats);
+router.get('/', getGoals);
+router.get('/:id', validateUUID, getGoal);
+router.post('/', validateGoal, createGoal);
+router.put('/:id', validateUUID, validateGoal, updateGoal);
+router.delete('/:id', validateUUID, deleteGoal);
+router.put('/:id/progress', validateUUID, validateGoalProgress, updateGoalProgress);
 
 module.exports = router;

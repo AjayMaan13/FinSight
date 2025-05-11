@@ -1,8 +1,9 @@
-const { protect } = require('../config/jwt');
+const { verifyToken } = require('../config/jwt');
 const { User } = require('../models');
 
 exports.protect = async (req, res, next) => {
   try {
+    // Get token from header
     let token;
     
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -17,7 +18,6 @@ exports.protect = async (req, res, next) => {
     }
 
     // Verify token
-    const { verifyToken } = require('../config/jwt');
     const decoded = verifyToken(token);
     
     if (!decoded) {
@@ -39,10 +39,20 @@ exports.protect = async (req, res, next) => {
       });
     }
 
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account is deactivated'
+      });
+    }
+
+    // Set user in request
     req.user = user;
+    
     next();
   } catch (error) {
-    console.error(error);
+    console.error('Auth middleware error:', error);
     res.status(401).json({
       success: false,
       message: 'Not authorized'

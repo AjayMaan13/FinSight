@@ -1,55 +1,17 @@
 // src/pages/Dashboard.jsx
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { createTransaction } from "../services/api";
+import { transactionAPI, goalAPI } from "../services/api";
+import SpendingOverviewChart from '../components/charts/SpendingOverviewChart';
+import { 
+  getTransactions, 
+  getTransactionSummary,
+  getMonthlyTrends,
+  getGoals 
+} from "../services/api";
 
-// Example transaction data (for demo)
-const recentTransactions = [
-  {
-    id: 1,
-    name: "Coffee Shop",
-    amount: -4.5,
-    date: "2025-05-07",
-    category: "Food & Drink",
-  },
-  {
-    id: 2,
-    name: "Paycheck",
-    amount: 2500.0,
-    date: "2025-05-01",
-    category: "Income",
-  },
-  {
-    id: 3,
-    name: "Electric Bill",
-    amount: -95.2,
-    date: "2025-05-03",
-    category: "Utilities",
-  },
-  {
-    id: 4,
-    name: "Grocery Store",
-    amount: -65.75,
-    date: "2025-05-05",
-    category: "Groceries",
-  },
-  {
-    id: 5,
-    name: "Online Shopping",
-    amount: -39.99,
-    date: "2025-05-06",
-    category: "Shopping",
-  },
-];
-
-const handleExport = () => {
-  // For now, just show an alert
-  // Later you can implement actual CSV export
-  alert("Export functionality coming soon!");
-};
-
-// Chart placeholder
+// Chart placeholder component
 const ChartPlaceholder = () => (
   <div className="flex items-center justify-center h-56 bg-gray-800 rounded-lg border border-gray-700">
     <div className="text-center">
@@ -93,7 +55,9 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
         amount: parseFloat(form.amount),
       };
 
-      await createTransaction(formattedData);
+      const response = await transactionAPI.create(formattedData);
+      console.log('Transaction created:', response.data); // Debug log
+
       setForm({
         amount: "",
         description: "",
@@ -101,9 +65,12 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
         category: "",
         type: "expense",
       });
+
+      // Call the success callback which will refresh dashboard data
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to add transaction");
+      console.error('Error creating transaction:', err);
+      setError(err.response?.data?.message || "Failed to add transaction");
     } finally {
       setLoading(false);
     }
@@ -239,21 +206,134 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
   );
 };
 
+// Main Dashboard Component
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showAddTransaction, setShowAddTransaction] = useState(false);
 
+  // State variables
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState({
+    balance: 0,
+    income: 0,
+    expenses: 0,
+    savingsProgress: 0
+  });
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]);
+
   const [categories, setCategories] = useState([
-  'Food & Drink',
-  'Groceries',
-  'Transportation',
-  'Shopping',
-  'Utilities',
-  'Entertainment',
-  'Healthcare',
-  'Other'
-]);
+    'Food & Drink',
+    'Groceries',
+    'Transportation',
+    'Shopping',
+    'Utilities',
+    'Entertainment',
+    'Healthcare',
+    'Other'
+  ]);
+
+  // Fetch dashboard data on mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Add a new state for goal data
+  const [goalData, setGoalData] = useState({
+    totalCurrent: 0,
+    totalTarget: 10000, // default value
+    progress: 0
+  });
+
+  // Update fetchDashboardData to include goal calculations
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch transaction summary with better error handling
+      try {
+        const summaryRes = await transactionAPI.getSummary();
+        console.log('Summary response:', summaryRes.data); // Debug log
+
+        setSummary({
+          balance: summaryRes.data.balance || 0,
+          income: summaryRes.data.totalIncome || 0,
+          expenses: summaryRes.data.totalExpenses || 0,
+          savingsProgress: 0
+        });
+      } catch (summaryError) {
+        console.error('Error fetching summary:', summaryError);
+        // Set default values if summary fails
+        setSummary({
+          balance: 0,
+          income: 0,
+          expenses: 0,
+          savingsProgress: 0
+        });
+      }
+
+      // Fetch recent transactions
+      try {
+        const transactionsRes = await transactionAPI.getAll({ limit: 5, sort: 'date', order: 'DESC' });
+        console.log('Transactions response:', transactionsRes.data); // Debug log
+        setRecentTransactions(transactionsRes.data.transactions || []);
+      } catch (transactionError) {
+        console.error('Error fetching transactions:', transactionError);
+        setRecentTransactions([]);
+      }
+
+      // Fetch monthly trends
+      try {
+        const trendsRes = await transactionAPI.getMonthlyTrends();
+        console.log('Trends response:', trendsRes.data); // Debug log
+        setMonthlyData(trendsRes.data || []);
+      } catch (trendsError) {
+        console.error('Error fetching trends:', trendsError);
+        setMonthlyData([]);
+      }
+
+      // Fetch goals for savings progress
+      try {
+        const goalsRes = await goalAPI.getAll();
+        console.log('Goals response:', goalsRes.data); // Debug log
+
+        if (goalsRes.data.goals && goalsRes.data.goals.length > 0) {
+          const totalTarget = goalsRes.data.goals.reduce((sum, goal) => sum + parseFloat(goal.targetAmount || 0), 0);
+          const totalCurrent = goalsRes.data.goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount || 0), 0);
+          const progress = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
+
+          setGoalData({
+            totalCurrent,
+            totalTarget,
+            progress
+          });
+
+          setSummary(prev => ({ ...prev, savingsProgress: progress }));
+        }
+      } catch (goalsError) {
+        console.error('Error fetching goals:', goalsError);
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setLoading(false);
+    }
+  };
+
+  const handleTransactionSuccess = () => {
+    setShowAddTransaction(false);
+    fetchDashboardData(); // Refresh data after adding transaction
+  };
+
+  const handleExport = () => {
+    // For now, just show an alert
+    // Later you can implement actual CSV export
+    alert("Export functionality coming soon!");
+  };
+
+
 
   return (
     <div>
@@ -316,7 +396,7 @@ const Dashboard = () => {
                       </dt>
                       <dd>
                         <div className="text-lg font-medium text-white">
-                          $24,500.00
+                          ${loading ? '...' : summary.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </div>
                       </dd>
                     </dl>
@@ -362,7 +442,7 @@ const Dashboard = () => {
                       </dt>
                       <dd>
                         <div className="text-lg font-medium text-white">
-                          $3,200.00
+                          ${loading ? '...' : summary.expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </div>
                       </dd>
                     </dl>
@@ -408,7 +488,7 @@ const Dashboard = () => {
                       </dt>
                       <dd>
                         <div className="text-lg font-medium text-white">
-                          65%
+                          {loading ? '...' : `${summary.savingsProgress}%`}
                         </div>
                       </dd>
                     </dl>
@@ -418,13 +498,13 @@ const Dashboard = () => {
                   <div className="relative pt-1">
                     <div className="overflow-hidden h-2 mb-1 text-xs flex rounded bg-gray-700">
                       <div
-                        style={{ width: "65%" }}
+                        style={{ width: `${summary.savingsProgress}%` }}
                         className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"
                       ></div>
                     </div>
                     <div className="text-right">
                       <span className="text-xs font-semibold inline-block text-green-400">
-                        $6,500 / $10,000
+                        ${loading ? '...' : goalData.totalCurrent.toLocaleString('en-US', { minimumFractionDigits: 0 })} / ${loading ? '...' : goalData.totalTarget.toLocaleString('en-US', { minimumFractionDigits: 0 })}
                       </span>
                     </div>
                   </div>
@@ -452,7 +532,13 @@ const Dashboard = () => {
                   Spending Overview
                 </h3>
                 <div className="mt-2">
-                  <ChartPlaceholder />
+                  {loading ? (
+                    <div className="flex items-center justify-center h-56">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : (
+                    <SpendingOverviewChart data={monthlyData} />
+                  )}
                 </div>
               </div>
             </div>
@@ -465,63 +551,51 @@ const Dashboard = () => {
                 </h3>
                 <div className="flow-root">
                   <ul className="-my-5 divide-y divide-gray-700">
-                    {recentTransactions.map((transaction) => (
-                      <li key={transaction.id} className="py-4">
-                        <div className="flex items-center space-x-4">
-                          <div
-                            className={`flex-shrink-0 rounded-md p-2 ${
-                              transaction.amount > 0
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
-                          >
-                            <svg
-                              className="h-4 w-4 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              {transaction.amount > 0 ? (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                />
-                              ) : (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M20 12H4"
-                                />
-                              )}
-                            </svg>
+                    {loading ? (
+                      <li className="py-4 text-center text-gray-400">Loading...</li>
+                    ) : recentTransactions.length === 0 ? (
+                      <li className="py-4 text-center text-gray-400">No transactions yet</li>
+                    ) : (
+                      recentTransactions.map((transaction) => (
+                        <li key={transaction.id} className="py-4">
+                          <div className="flex items-center space-x-4">
+                            <div className={`flex-shrink-0 rounded-md p-2 ${transaction.type === 'income' ? "bg-green-500" : "bg-red-500"
+                              }`}>
+                              <svg
+                                className="h-4 w-4 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                {transaction.type === 'income' ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                )}
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-white truncate">
+                                {transaction.description}
+                              </p>
+                              <p className="text-sm text-gray-400 truncate">
+                                {new Date(transaction.date).toLocaleDateString()} • {transaction.category}
+                              </p>
+                            </div>
+                            <div>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transaction.type === 'income'
+                                ? "bg-green-900 text-green-300"
+                                : "bg-red-900 text-red-300"
+                                }`}>
+                                {transaction.type === 'income' ? "+" : "-"}$
+                                {Math.abs(transaction.amount).toFixed(2)}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">
-                              {transaction.name}
-                            </p>
-                            <p className="text-sm text-gray-400 truncate">
-                              {transaction.date} • {transaction.category}
-                            </p>
-                          </div>
-                          <div>
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                transaction.amount > 0
-                                  ? "bg-green-900 text-green-300"
-                                  : "bg-red-900 text-red-300"
-                              }`}
-                            >
-                              {transaction.amount > 0 ? "+" : ""}$
-                              {Math.abs(transaction.amount).toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
+                        </li>
+                      ))
+                    )}
                   </ul>
                 </div>
               </div>
@@ -655,12 +729,12 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      <AddTransactionModal 
+
+      {/* Add Transaction Modal */}
+      <AddTransactionModal
         isOpen={showAddTransaction}
         onClose={() => setShowAddTransaction(false)}
-        onSuccess={() => {
-          setShowAddTransaction(false);
-        }}
+        onSuccess={handleTransactionSuccess}
       />
     </div>
   );

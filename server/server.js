@@ -1,18 +1,21 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger/swaggerConfig');
+const { globalErrorHandler, notFound } = require('./middleware/errorHandler');
 
 // Load env vars
 dotenv.config();
 
-// Import database - use index.js instead of database.js
+// Import database
 const db = require('./models');
 
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
-// const goalRoutes = require('./routes/goals'); // Uncomment when you create this file
+const goalRoutes = require('./routes/goals');
 
 // Initialize app
 const app = express();
@@ -21,25 +24,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
-// app.use('/api/goals', goalRoutes); // Uncomment when you create this file
+app.use('/api/goals', goalRoutes);
 
 // Base route
 app.get('/', (req, res) => {
-  res.send('FinSight API is running...');
+  res.send('FinSight API is running... Visit /api-docs for documentation');
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Server Error'
-  });
-});
+// 404 handler
+app.use(notFound);
+
+// Global error handler
+app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 5000;
 
