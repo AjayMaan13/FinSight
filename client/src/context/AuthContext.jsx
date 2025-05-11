@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import api from '../services/api';
+import api, { authAPI, transactionAPI, goalAPI } from '../services/api';
 
 export const AuthContext = createContext();
 
@@ -12,16 +12,17 @@ export const AuthProvider = ({ children }) => {
 
   // Set token in axios headers and localStorage
   const setAuthToken = (newToken) => {
-    if (newToken) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-    } else {
-      delete api.defaults.headers.common['Authorization'];
-      localStorage.removeItem('token');
-      setToken(null);
-    }
-  };
+  if (newToken) {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    // Update the default header for all API instances
+    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+  } else {
+    localStorage.removeItem('token');
+    setToken(null);
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
 
   // Load user if token exists
   const loadUser = async () => {
@@ -29,7 +30,7 @@ export const AuthProvider = ({ children }) => {
       setAuthToken(token);
       
       try {
-        const res = await api.get('/auth/me');
+        const res = await authAPI.getCurrentUser();
         setUser(res.data.user);
         setIsAuthenticated(true);
       } catch (err) {

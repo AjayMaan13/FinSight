@@ -1,6 +1,6 @@
 // controllers/transactionController.js
 const { Transaction } = require('../models');
-const { Op } = require('sequelize');
+const { Op } = require('sequelize');;
 
 
 // Get all transactions for the authenticated user
@@ -164,30 +164,10 @@ exports.getTransactionSummary = async (req, res) => {
       }
     }) || 0;
     
-    // Get expenses by category
-    const expensesByCategory = await Transaction.findAll({
-      attributes: [
-        'category',
-        [sequelize.fn('SUM', sequelize.col('amount')), 'total']
-      ],
-      where: {
-        ...whereClause,
-        type: 'expense'
-      },
-      group: ['category'],
-      order: [[sequelize.literal('total'), 'DESC']]
-    });
-    
-    console.log('Summary data:', { income, expenses }); // Debug log
-    
     res.json({
       totalIncome: parseFloat(income),
       totalExpenses: parseFloat(expenses),
       balance: parseFloat(income) - parseFloat(expenses),
-      expensesByCategory: expensesByCategory.map(item => ({
-        category: item.category,
-        total: parseFloat(item.getDataValue('total'))
-      }))
     });
   } catch (error) {
     console.error('Error getting transaction summary:', error);

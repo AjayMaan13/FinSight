@@ -1,6 +1,8 @@
 // src/components/transactions/TransactionForm.jsx
 import { useState } from 'react';
+import { transactionAPI } from '../../services/api';
 //import { createTransaction } from '../../services/api';
+
 
 function TransactionForm({ onSuccess }) {
   const [form, setForm] = useState({
@@ -23,32 +25,25 @@ function TransactionForm({ onSuccess }) {
     setError(null);
     
     try {
-      // Format amount as a number
-      const formattedData = {
-        ...form,
-        amount: parseFloat(form.amount)
-      };
-      
-      // For demo, create a transaction with a new ID
-      const newTransaction = {
-        ...formattedData,
-        id: Date.now() // Generate a temporary ID
-      };
-      
-      setForm({
-        amount: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0],
-        category: '',
-        type: 'expense'
-      });
-      
-      if (onSuccess) onSuccess(newTransaction);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to add transaction');
-    } finally {
-      setLoading(false);
-    }
+  const formattedData = {
+    ...form,
+    amount: parseFloat(form.amount)
+  };
+  
+  await transactionAPI.create(formattedData);
+  
+  setForm({
+    amount: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    category: '',
+    type: 'expense'
+  });
+  
+  if (onSuccess) onSuccess();
+} catch (err) {
+  setError(err.response?.data?.message || 'Failed to add transaction');
+}
   };
 
   return (

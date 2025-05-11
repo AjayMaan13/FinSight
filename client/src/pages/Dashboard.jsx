@@ -4,12 +4,6 @@ import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { transactionAPI, goalAPI } from "../services/api";
 import SpendingOverviewChart from '../components/charts/SpendingOverviewChart';
-import { 
-  getTransactions, 
-  getTransactionSummary,
-  getMonthlyTrends,
-  getGoals 
-} from "../services/api";
 
 // Chart placeholder component
 const ChartPlaceholder = () => (
@@ -235,9 +229,20 @@ const Dashboard = () => {
   ]);
 
   // Fetch dashboard data on mount
-  useEffect(() => {
+ useEffect(() => {
+  fetchDashboardData();
+  
+  // Refresh data when component comes into focus
+  const handleFocus = () => {
     fetchDashboardData();
-  }, []);
+  };
+  
+  window.addEventListener('focus', handleFocus);
+  
+  return () => {
+    window.removeEventListener('focus', handleFocus);
+  };
+}, []);
 
   // Add a new state for goal data
   const [goalData, setGoalData] = useState({
@@ -252,27 +257,27 @@ const Dashboard = () => {
       setLoading(true);
 
       // Fetch transaction summary with better error handling
-      try {
-        const summaryRes = await transactionAPI.getSummary();
-        console.log('Summary response:', summaryRes.data); // Debug log
+      // Fetch transaction summary with better error handling
+try {
+  const summaryRes = await transactionAPI.getSummary();
+  console.log('Summary response:', summaryRes.data); // Debug log
 
-        setSummary({
-          balance: summaryRes.data.balance || 0,
-          income: summaryRes.data.totalIncome || 0,
-          expenses: summaryRes.data.totalExpenses || 0,
-          savingsProgress: 0
-        });
-      } catch (summaryError) {
-        console.error('Error fetching summary:', summaryError);
-        // Set default values if summary fails
-        setSummary({
-          balance: 0,
-          income: 0,
-          expenses: 0,
-          savingsProgress: 0
-        });
-      }
-
+  setSummary({
+    balance: summaryRes.data.balance || 0,
+    income: summaryRes.data.totalIncome || 0,
+    expenses: summaryRes.data.totalExpenses || 0,
+    savingsProgress: 0 // This will be updated when we fetch goals
+  });
+} catch (summaryError) {
+  console.error('Error fetching summary:', summaryError);
+  // Set default values if summary fails
+  setSummary({
+    balance: 0,
+    income: 0,
+    expenses: 0,
+    savingsProgress: 0
+  });
+}
       // Fetch recent transactions
       try {
         const transactionsRes = await transactionAPI.getAll({ limit: 5, sort: 'date', order: 'DESC' });
@@ -294,26 +299,33 @@ const Dashboard = () => {
       }
 
       // Fetch goals for savings progress
-      try {
-        const goalsRes = await goalAPI.getAll();
-        console.log('Goals response:', goalsRes.data); // Debug log
+      // Fetch goals for savings progress
+try {
+  const goalsRes = await goalAPI.getAll();
+  console.log('Goals response:', goalsRes.data); // Debug log
 
-        if (goalsRes.data.goals && goalsRes.data.goals.length > 0) {
-          const totalTarget = goalsRes.data.goals.reduce((sum, goal) => sum + parseFloat(goal.targetAmount || 0), 0);
-          const totalCurrent = goalsRes.data.goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount || 0), 0);
-          const progress = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
+  if (goalsRes.data.goals && goalsRes.data.goals.length > 0) {
+    const totalTarget = goalsRes.data.goals.reduce((sum, goal) => sum + parseFloat(goal.targetAmount || 0), 0);
+    const totalCurrent = goalsRes.data.goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount || 0), 0);
+    const progress = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
 
-          setGoalData({
-            totalCurrent,
-            totalTarget,
-            progress
-          });
+    setGoalData({
+      totalCurrent,
+      totalTarget,
+      progress
+    });
 
-          setSummary(prev => ({ ...prev, savingsProgress: progress }));
-        }
-      } catch (goalsError) {
-        console.error('Error fetching goals:', goalsError);
-      }
+    setSummary(prev => ({ ...prev, savingsProgress: progress }));
+  }
+} catch (goalsError) {
+  console.error('Error fetching goals:', goalsError);
+  // Set default values if goals fetch fails
+  setGoalData({
+    totalCurrent: 0,
+    totalTarget: 10000,
+    progress: 0
+  });
+}
 
       setLoading(false);
     } catch (error) {

@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react';
 import { createGoal, updateGoal } from '../../services/api';
 
+
 const GoalForm = ({ onSuccess, onCancel, editingGoal }) => {
   const [form, setForm] = useState({
     name: '',
     description: '',
     targetAmount: '',
-    currentAmount: '',
+    currentAmount: '0',
     targetDate: '',
     category: '',
     priority: 'medium'
@@ -41,10 +42,10 @@ const GoalForm = ({ onSuccess, onCancel, editingGoal }) => {
     
     try {
       const formattedData = {
-        ...form,
-        targetAmount: parseFloat(form.targetAmount),
-        currentAmount: parseFloat(form.currentAmount || 0)
-      };
+  ...form,
+  targetAmount: parseFloat(form.targetAmount),
+  currentAmount: parseFloat(form.currentAmount || 0)
+};
       
       if (editingGoal) {
         await updateGoal(editingGoal.id, formattedData);
@@ -119,6 +120,20 @@ const GoalForm = ({ onSuccess, onCancel, editingGoal }) => {
             placeholder="0.00"
           />
         </div>
+
+        <div>
+  <label className="block text-sm font-medium text-gray-300">Current Amount</label>
+  <input
+    type="number"
+    name="currentAmount"
+    value={form.currentAmount}
+    onChange={handleChange}
+    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+    step="0.01"
+    min="0"
+    placeholder="0.00"
+  />
+</div>
         
         <div>
           <label className="block text-sm font-medium text-gray-300">Current Amount</label>

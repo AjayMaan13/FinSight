@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-//import { getGoals, createGoal, updateGoal, deleteGoal } from '../services/api';
-
+import { goalAPI } from '../services/api';
+import GoalForm from '../components/goals/GoalForm';
 
 const Goals = () => {
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [updatingGoal, setUpdatingGoal] = useState(null); // This should be inside the component
 
   useEffect(() => {
     fetchGoals();
@@ -16,60 +17,116 @@ const Goals = () => {
   const fetchGoals = async () => {
     setLoading(true);
     try {
-      // Mock data - since we don't have a backend yet
-      // Later this can be replaced with: const response = await getGoals();
-      const mockGoals = [
-        {
-          id: 1,
-          name: 'Emergency Fund',
-          target: 10000,
-          current: 6500,
-          deadline: '2024-12-31',
-          category: 'savings'
-        },
-        {
-          id: 2,
-          name: 'Vacation Fund',
-          target: 5000,
-          current: 1500,
-          deadline: '2024-08-31',
-          category: 'travel'
-        },
-        {
-          id: 3,
-          name: 'New Car',
-          target: 20000,
-          current: 3000,
-          deadline: '2025-06-30',
-          category: 'purchase'
-        }
-      ];
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setGoals(mockGoals);
+      const response = await goalAPI.getAll();
+      console.log('Goals response:', response.data); // Add this line to debug
+      setGoals(response.data.goals || []);
       setError(null);
     } catch (err) {
       setError('Failed to load goals');
       console.error('Error fetching goals:', err);
+      setGoals([]);
     } finally {
       setLoading(false);
     }
   };
 
   const calculateProgress = (current, target) => {
+    if (!target || target === 0) return 0;
     return Math.round((current / target) * 100);
   };
 
   const formatCurrency = (amount) => {
+    // Convert string to number if needed
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+    if (isNaN(numAmount)) return '$0.00';
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(numAmount);
   };
+
+ const UpdateProgressForm = ({ goal, onSuccess, onCancel }) => {
+  const initialAmount = typeof goal.currentAmount === 'string' 
+    ? parseFloat(goal.currentAmount) || 0 
+    : goal.currentAmount || 0;
+    
+  const [amount, setAmount] = useState(initialAmount.toString());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const updatedGoal = {
+        name: goal.name,
+        description: goal.description,
+        targetAmount: goal.targetAmount,
+        targetDate: goal.targetDate,
+        category: goal.category,
+        priority: goal.priority,
+        status: goal.status,
+        currentAmount: parseFloat(amount)
+      };
+      
+      await goalAPI.update(goal.id, updatedGoal);
+      
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update progress');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <div className="bg-red-900 text-red-300 p-3 rounded">{error}</div>}
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-300">Current Amount</label>
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+          className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+          step="0.01"
+          min="0"
+          max={goal.targetAmount}
+        />
+        <p className="mt-1 text-sm text-gray-400">
+          Target: {formatCurrency(goal.targetAmount)}
+        </p>
+      </div>
+      
+      <div className="flex justify-end gap-3 mt-6">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+        >
+          {loading ? 'Updating...' : 'Update Progress'}
+        </button>
+      </div>
+    </form>
+  );
+};
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -83,8 +140,8 @@ const Goals = () => {
                 Set and track your financial goals to stay on top of your savings
               </p>
             </div>
-            <Link 
-              to="/dashboard" 
+            <Link
+              to="/dashboard"
               className="text-blue-400 hover:text-blue-300 flex items-center"
             >
               <svg className="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,8 +189,8 @@ const Goals = () => {
               </div>
             ) : (
               goals.map((goal) => {
-                const progress = calculateProgress(goal.current, goal.target);
-                
+                const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
+
                 return (
                   <div
                     key={goal.id}
@@ -158,8 +215,8 @@ const Goals = () => {
                         />
                       </div>
                       <div className="flex justify-between text-sm text-gray-400">
-                        <span>{formatCurrency(goal.current)}</span>
-                        <span>{formatCurrency(goal.target)}</span>
+                        <span>{formatCurrency(goal.currentAmount)}</span>
+                        <span>{formatCurrency(goal.targetAmount)}</span>
                       </div>
                     </div>
 
@@ -167,28 +224,62 @@ const Goals = () => {
                     <div className="text-sm text-gray-400">
                       <div className="flex justify-between mb-1">
                         <span>Deadline:</span>
-                        <span>{new Date(goal.deadline).toLocaleDateString()}</span>
+                        <span>{new Date(goal.targetDate).toLocaleDateString()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Remaining:</span>
-                        <span className="text-blue-400">{formatCurrency(goal.target - goal.current)}</span>
+                        <span className="text-blue-400">{formatCurrency(goal.targetAmount - goal.currentAmount)}</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex justify-between">
+                      <button
+                        onClick={() => setUpdatingGoal(goal)}
+                        className="text-sm font-medium text-blue-400 hover:text-blue-300"
+                      >
+                        Update Progress
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{goal.category}</span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          goal.priority === 'high' ? 'bg-red-900 text-red-300' : 
+                          goal.priority === 'medium' ? 'bg-yellow-900 text-yellow-300' : 
+                          'bg-green-900 text-green-300'
+                        }`}>
+                          {goal.priority}
+                        </span>
                       </div>
                     </div>
                   </div>
+                  
                 );
               })
             )}
           </div>
         )}
 
-        {/* Add Goal Modal (Placeholder) */}
+        {/* Add Goal Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
+              <GoalForm
+                onSuccess={() => {
+                  setShowAddModal(false);
+                  fetchGoals();
+                }}
+                onCancel={() => setShowAddModal(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Update Progress Modal */}
+        {updatingGoal && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">Create New Goal</h3>
+                <h3 className="text-xl font-bold text-white">Update Progress for {updatingGoal.name}</h3>
                 <button 
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => setUpdatingGoal(null)}
                   className="text-gray-400 hover:text-white"
                 >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -196,7 +287,15 @@ const Goals = () => {
                   </svg>
                 </button>
               </div>
-              <p className="text-gray-400">Goal creation form coming soon...</p>
+              
+              <UpdateProgressForm 
+                goal={updatingGoal}
+                onSuccess={() => {
+                  setUpdatingGoal(null);
+                  fetchGoals();
+                }} 
+                onCancel={() => setUpdatingGoal(null)} 
+              />
             </div>
           </div>
         )}

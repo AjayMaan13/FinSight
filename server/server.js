@@ -21,7 +21,10 @@ const goalRoutes = require('./routes/goals');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // Your Vite dev server URL
+  credentials: true
+}));
 app.use(express.json());
 
 // Request logging middleware
@@ -50,7 +53,7 @@ app.use(notFound);
 // Global error handler
 app.use(globalErrorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Sync database and start server
 db.sequelize.sync({ alter: process.env.NODE_ENV === 'development' })

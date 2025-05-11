@@ -64,7 +64,7 @@ exports.getGoal = async (req, res) => {
 // Create a new goal
 exports.createGoal = async (req, res) => {
   try {
-    const { name, description, targetAmount, targetDate, category, priority } = req.body;
+    const { name, description, targetAmount, targetDate, category, priority, currentAmount } = req.body;
     
     const goal = await Goal.create({
       name,
@@ -74,7 +74,7 @@ exports.createGoal = async (req, res) => {
       category,
       priority,
       userId: req.user.id,
-      currentAmount: 0,
+      currentAmount: currentAmount || 0,  // Allow currentAmount from request
       status: 'active'
     });
     
@@ -110,7 +110,7 @@ exports.updateGoal = async (req, res) => {
     }
     
     const updatedFields = {};
-    const allowedFields = ['name', 'description', 'targetAmount', 'targetDate', 'category', 'priority', 'status'];
+    const allowedFields = ['name', 'description', 'targetAmount', 'targetDate', 'category', 'priority', 'status', 'currentAmount'];
     
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
