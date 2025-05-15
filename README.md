@@ -12,6 +12,7 @@ A modern, full-stack personal finance application that helps users track transac
 - **Data Import**: CSV import functionality for bulk transaction uploads
 - **Real-time Updates**: Dynamic dashboard with live financial summaries
 - **Responsive Design**: Mobile-first design with dark theme
+- **ML-Powered Features**: Balance forecasting and transaction anomaly detection (Future Enhancement)
 
 ## 🛠️ Technical Stack
 
@@ -34,6 +35,14 @@ A modern, full-stack personal finance application that helps users track transac
 - **Express Validator** for request validation
 - **CORS** for cross-origin resource sharing
 - **Swagger** for API documentation
+
+### Machine Learning Service
+- **Python & Flask** for ML API service
+- **Pandas & NumPy** for data processing
+- **Scikit-learn** for ML algorithms
+- **Time Series Forecasting** for balance prediction
+- **Anomaly Detection** for transaction analysis
+- **Microservices Architecture** with separate ML service
 
 ### Development Tools
 - **ESLint** for code linting
@@ -61,6 +70,11 @@ finsight/
 │   ├── middleware/       # Custom middleware
 │   ├── migrations/       # Database migrations
 │   └── config/           # Configuration files
+├── ml-service/           # Python ML service (Future)
+│   ├── app.py           # Flask API server
+│   ├── predict.py       # ML prediction models
+│   ├── utils.py         # Data preprocessing
+│   └── requirements.txt # Python dependencies
 └── docs/                 # Documentation
 ```
 
@@ -84,6 +98,14 @@ finsight/
 - Error handling and logging
 - Database migrations and seeding
 - API documentation with Swagger
+
+### Machine Learning & Data Science
+- Python Flask microservice architecture
+- Data preprocessing with Pandas/NumPy
+- Time series forecasting implementation
+- Anomaly detection algorithms
+- Feature engineering for financial data
+- ML model integration with REST APIs
 
 ### Database Design
 - Relational database design with PostgreSQL
@@ -140,7 +162,14 @@ npm run migrate
 npm run seed
 ```
 
-6. Start the development servers
+6. (Optional) Set up ML Service
+```bash
+cd ../ml-service
+pip install -r requirements.txt
+python app.py  # Runs on port 5002
+```
+
+7. Start the development servers
 ```bash
 # Terminal 1 - Backend
 cd server
@@ -149,6 +178,10 @@ npm run dev
 # Terminal 2 - Frontend
 cd client
 npm run dev
+
+# Terminal 3 - ML Service (optional)
+cd ml-service
+python app.py
 ```
 
 ## 📊 API Documentation
@@ -163,6 +196,10 @@ The API documentation is available at `http://localhost:5001/api-docs` when runn
 - `GET /api/goals` - Get user goals
 - `POST /api/goals` - Create goal
 - `GET /api/transactions/summary` - Get financial summary
+
+### ML Service Endpoints (Future Feature)
+- `POST /ml/forecast` - Generate balance forecasts
+- `POST /ml/anomaly` - Detect transaction anomalies
 
 ## 🎨 UI/UX Features
 
@@ -180,6 +217,27 @@ The API documentation is available at `http://localhost:5001/api-docs` when runn
 - **Progress Tracking**: Visual progress indicators for goals
 - **Monthly Trends**: Chart visualization of income/expense trends
 - **Category Analytics**: Expense breakdown by category
+- **ML Integration**: Microservice architecture with Python Flask for future ML features
+
+## 🤖 Machine Learning Features (In Development)
+
+The project includes a separate Python Flask service for machine learning capabilities:
+
+### Balance Forecasting
+- Predicts future account balances using time series analysis
+- Takes into account historical spending patterns
+- Provides 30-day financial outlook
+
+### Anomaly Detection
+- Identifies unusual transactions that deviate from normal patterns
+- Flags potentially fraudulent or erroneous transactions
+- Assigns anomaly scores for risk assessment
+
+### Technical Implementation
+- **Flask API**: RESTful endpoints for ML predictions
+- **Data Preprocessing**: Pandas/NumPy for data cleaning and feature engineering
+- **Future Models**: Ready for LSTM, Prophet, or Isolation Forest implementation
+- **Microservice Design**: Scalable architecture for ML workloads
 
 ## 🧪 Testing
 
@@ -190,10 +248,19 @@ The project includes test configurations for:
 
 ## 🚀 Deployment
 
-The application is ready for deployment on platforms like:
-- **Frontend**: Vercel, Netlify
-- **Backend**: Heroku, Railway, AWS
-- **Database**: Heroku Postgres, AWS RDS
+The application supports microservice deployment across multiple platforms:
+
+### Frontend
+- **Vercel**, **Netlify** for React application
+
+### Backend API
+- **Heroku**, **Railway**, **AWS EC2** for Node.js server
+
+### Database
+- **Heroku Postgres**, **AWS RDS**, **Railway Postgres**
+
+### ML Service
+- **Heroku**, **AWS Lambda**, **Google Cloud Run** for Python Flask service
 
 ## 📈 Performance Considerations
 
@@ -223,6 +290,11 @@ The application is ready for deployment on platforms like:
 - Database modeling and migrations
 - Authentication and security
 - Version control with Git
+- **Python for Machine Learning**
+- **Flask microservices**
+- **Data science with Pandas/NumPy**
+- **Time series analysis**
+- **Anomaly detection algorithms**
 
 ### Soft Skills
 - Problem-solving and debugging
@@ -245,7 +317,6 @@ The application is ready for deployment on platforms like:
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👤 Author
-
 **Your Name**
 - GitHub: [@AjayMaan13](https://github.com/AjayMaan13)
 - LinkedIn: [Ajaypartap Singh Maan](https://linkedin.com/ajaypartap-singh-maan)
