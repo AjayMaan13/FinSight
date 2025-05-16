@@ -320,7 +320,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Your Name**
 - GitHub: [@AjayMaan13](https://github.com/AjayMaan13)
 - LinkedIn: [Ajaypartap Singh Maan](https://linkedin.com/ajaypartap-singh-maan)
-- Email: your.email@example.com
+- Email: ajayapsmaanm13@gmail.com
 
 ---
 
