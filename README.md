@@ -14,6 +14,7 @@ A modern, full-stack personal finance application that helps users track transac
 - **Responsive Design**: Mobile-first design with dark theme
 - **ML-Powered Features**: Balance forecasting and transaction anomaly detection (Future Enhancement)
 
+
 ## 🛠️ Technical Stack
 
 ### Frontend
