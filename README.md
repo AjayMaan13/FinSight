@@ -1,4 +1,4 @@
-# FinSight - Personal Finance Tracker
+# FinSight - Personal Finance Tracker 
 
 A modern, full-stack personal finance application that helps users track transactions, set financial goals, manage budgets, and gain insights into their spending patterns.
 
