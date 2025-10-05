@@ -1,49 +1,11 @@
 // src/pages/Dashboard.jsx
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { createTransaction } from "../services/api";
 import MonthlyTrendChart from '../components/charts/MonthlyTrendChart';
 
 
-// Example transaction data (for demo)
-const recentTransactions = [
-  {
-    id: 1,
-    name: "Coffee Shop",
-    amount: -4.5,
-    date: "2025-05-07",
-    category: "Food & Drink",
-  },
-  {
-    id: 2,
-    name: "Paycheck",
-    amount: 2500.0,
-    date: "2025-05-01",
-    category: "Income",
-  },
-  {
-    id: 3,
-    name: "Electric Bill",
-    amount: -95.2,
-    date: "2025-05-03",
-    category: "Utilities",
-  },
-  {
-    id: 4,
-    name: "Grocery Store",
-    amount: -65.75,
-    date: "2025-05-05",
-    category: "Groceries",
-  },
-  {
-    id: 5,
-    name: "Online Shopping",
-    amount: -39.99,
-    date: "2025-05-06",
-    category: "Shopping",
-  },
-];
+
 
 
 
@@ -93,13 +55,10 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
     setError(null);
 
     try {
-      const formattedData = {
-        ...form,
-        amount: parseFloat(form.amount),
-      };
+ 
 
-      const response = await transactionAPI.create(formattedData);
-      console.log('Transaction created:', response.data); // Debug log
+      //const response = await transactionAPI.create(formattedData);
+      //console.log('Transaction created:', response.data); // Debug log
 
       setForm({
         amount: "",
@@ -264,7 +223,6 @@ const Dashboard = () => {
     savingsProgress: 0
   });
   const [recentTransactions, setRecentTransactions] = useState([]);
-  const [monthlyData, setMonthlyData] = useState([]);
 
   const [categories, setCategories] = useState([
   'Food & Drink',
