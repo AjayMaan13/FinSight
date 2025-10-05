@@ -3,6 +3,8 @@ import { useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { createTransaction } from "../services/api";
+import MonthlyTrendChart from '../components/charts/MonthlyTrendChart';
+
 
 // Example transaction data (for demo)
 const recentTransactions = [
@@ -43,6 +45,8 @@ const recentTransactions = [
   },
 ];
 
+
+
 const handleExport = () => {
   // For now, just show an alert
   // Later you can implement actual CSV export
@@ -81,6 +85,7 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -254,6 +259,15 @@ const Dashboard = () => {
   'Healthcare',
   'Other'
 ]);
+
+  const [monthlyData] = useState([
+    { month: 1, income: 5000, expense: 3200, balance: 1800 },
+    { month: 2, income: 5200, expense: 3500, balance: 1700 },
+    { month: 3, income: 4800, expense: 2900, balance: 1900 },
+    { month: 4, income: 5500, expense: 3800, balance: 1700 },
+    { month: 5, income: 5000, expense: 3100, balance: 1900 },
+  ]);
+
 
   return (
     <div>
@@ -446,16 +460,19 @@ const Dashboard = () => {
           {/* Charts and Recent Transactions */}
           <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Chart Section */}
-            <div className="bg-gray-800 rounded-lg shadow border border-gray-700">
-              <div className="p-5">
-                <h3 className="text-lg leading-6 font-medium text-white">
-                  Spending Overview
-                </h3>
-                <div className="mt-2">
-                  <ChartPlaceholder />
-                </div>
+            
+
+
+
+
+              {/* Category Breakdown */}
+              <div className="bg-gray-800 rounded-lg shadow border border-gray-700 p-6">
+                <h3 className="text-lg font-medium text-white mb-4">Monthly Trends</h3>
+                <MonthlyTrendChart data={monthlyData} />
               </div>
-            </div>
+
+
+            
 
             {/* Recent Transactions */}
             <div className="bg-gray-800 rounded-lg shadow border border-gray-700">
