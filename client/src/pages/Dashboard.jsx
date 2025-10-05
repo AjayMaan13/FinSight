@@ -2,8 +2,56 @@
 import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { transactionAPI, goalAPI } from "../services/api";
-import SpendingOverviewChart from '../components/charts/SpendingOverviewChart';
+import { createTransaction } from "../services/api";
+import MonthlyTrendChart from '../components/charts/MonthlyTrendChart';
+
+
+// Example transaction data (for demo)
+const recentTransactions = [
+  {
+    id: 1,
+    name: "Coffee Shop",
+    amount: -4.5,
+    date: "2025-05-07",
+    category: "Food & Drink",
+  },
+  {
+    id: 2,
+    name: "Paycheck",
+    amount: 2500.0,
+    date: "2025-05-01",
+    category: "Income",
+  },
+  {
+    id: 3,
+    name: "Electric Bill",
+    amount: -95.2,
+    date: "2025-05-03",
+    category: "Utilities",
+  },
+  {
+    id: 4,
+    name: "Grocery Store",
+    amount: -65.75,
+    date: "2025-05-05",
+    category: "Groceries",
+  },
+  {
+    id: 5,
+    name: "Online Shopping",
+    amount: -39.99,
+    date: "2025-05-06",
+    category: "Shopping",
+  },
+];
+
+
+
+const handleExport = () => {
+  // For now, just show an alert
+  // Later you can implement actual CSV export
+  alert("Export functionality coming soon!");
+};
 
 // Chart placeholder component
 const ChartPlaceholder = () => (
@@ -37,6 +85,7 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -218,133 +267,23 @@ const Dashboard = () => {
   const [monthlyData, setMonthlyData] = useState([]);
 
   const [categories, setCategories] = useState([
-    'Food & Drink',
-    'Groceries',
-    'Transportation',
-    'Shopping',
-    'Utilities',
-    'Entertainment',
-    'Healthcare',
-    'Other'
+  'Food & Drink',
+  'Groceries',
+  'Transportation',
+  'Shopping',
+  'Utilities',
+  'Entertainment',
+  'Healthcare',
+  'Other'
+]);
+
+  const [monthlyData] = useState([
+    { month: 1, income: 5000, expense: 3200, balance: 1800 },
+    { month: 2, income: 5200, expense: 3500, balance: 1700 },
+    { month: 3, income: 4800, expense: 2900, balance: 1900 },
+    { month: 4, income: 5500, expense: 3800, balance: 1700 },
+    { month: 5, income: 5000, expense: 3100, balance: 1900 },
   ]);
-
-  // Fetch dashboard data on mount
- useEffect(() => {
-  fetchDashboardData();
-  
-  // Refresh data when component comes into focus
-  const handleFocus = () => {
-    fetchDashboardData();
-  };
-  
-  window.addEventListener('focus', handleFocus);
-  
-  return () => {
-    window.removeEventListener('focus', handleFocus);
-  };
-}, []);
-
-  // Add a new state for goal data
-  const [goalData, setGoalData] = useState({
-    totalCurrent: 0,
-    totalTarget: 10000, // default value
-    progress: 0
-  });
-
-  // Update fetchDashboardData to include goal calculations
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-
-      // Fetch transaction summary with better error handling
-      // Fetch transaction summary with better error handling
-try {
-  const summaryRes = await transactionAPI.getSummary();
-  console.log('Summary response:', summaryRes.data); // Debug log
-
-  setSummary({
-    balance: summaryRes.data.balance || 0,
-    income: summaryRes.data.totalIncome || 0,
-    expenses: summaryRes.data.totalExpenses || 0,
-    savingsProgress: 0 // This will be updated when we fetch goals
-  });
-} catch (summaryError) {
-  console.error('Error fetching summary:', summaryError);
-  // Set default values if summary fails
-  setSummary({
-    balance: 0,
-    income: 0,
-    expenses: 0,
-    savingsProgress: 0
-  });
-}
-      // Fetch recent transactions
-      try {
-        const transactionsRes = await transactionAPI.getAll({ limit: 5, sort: 'date', order: 'DESC' });
-        console.log('Transactions response:', transactionsRes.data); // Debug log
-        setRecentTransactions(transactionsRes.data.transactions || []);
-      } catch (transactionError) {
-        console.error('Error fetching transactions:', transactionError);
-        setRecentTransactions([]);
-      }
-
-      // Fetch monthly trends
-      try {
-        const trendsRes = await transactionAPI.getMonthlyTrends();
-        console.log('Trends response:', trendsRes.data); // Debug log
-        setMonthlyData(trendsRes.data || []);
-      } catch (trendsError) {
-        console.error('Error fetching trends:', trendsError);
-        setMonthlyData([]);
-      }
-
-      // Fetch goals for savings progress
-      // Fetch goals for savings progress
-try {
-  const goalsRes = await goalAPI.getAll();
-  console.log('Goals response:', goalsRes.data); // Debug log
-
-  if (goalsRes.data.goals && goalsRes.data.goals.length > 0) {
-    const totalTarget = goalsRes.data.goals.reduce((sum, goal) => sum + parseFloat(goal.targetAmount || 0), 0);
-    const totalCurrent = goalsRes.data.goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount || 0), 0);
-    const progress = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
-
-    setGoalData({
-      totalCurrent,
-      totalTarget,
-      progress
-    });
-
-    setSummary(prev => ({ ...prev, savingsProgress: progress }));
-  }
-} catch (goalsError) {
-  console.error('Error fetching goals:', goalsError);
-  // Set default values if goals fetch fails
-  setGoalData({
-    totalCurrent: 0,
-    totalTarget: 10000,
-    progress: 0
-  });
-}
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setLoading(false);
-    }
-  };
-
-  const handleTransactionSuccess = () => {
-    setShowAddTransaction(false);
-    fetchDashboardData(); // Refresh data after adding transaction
-  };
-
-  const handleExport = () => {
-    // For now, just show an alert
-    // Later you can implement actual CSV export
-    alert("Export functionality coming soon!");
-  };
-
 
 
   return (
@@ -538,22 +477,19 @@ try {
           {/* Charts and Recent Transactions */}
           <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Chart Section */}
-            <div className="bg-gray-800 rounded-lg shadow border border-gray-700">
-              <div className="p-5">
-                <h3 className="text-lg leading-6 font-medium text-white">
-                  Spending Overview
-                </h3>
-                <div className="mt-2">
-                  {loading ? (
-                    <div className="flex items-center justify-center h-56">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
-                  ) : (
-                    <SpendingOverviewChart data={monthlyData} />
-                  )}
-                </div>
+            
+
+
+
+
+              {/* Category Breakdown */}
+              <div className="bg-gray-800 rounded-lg shadow border border-gray-700 p-6">
+                <h3 className="text-lg font-medium text-white mb-4">Monthly Trends</h3>
+                <MonthlyTrendChart data={monthlyData} />
               </div>
-            </div>
+
+
+            
 
             {/* Recent Transactions */}
             <div className="bg-gray-800 rounded-lg shadow border border-gray-700">
