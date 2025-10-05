@@ -1,5 +1,5 @@
 // src/pages/Dashboard.jsx
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import MonthlyTrendChart from '../components/charts/MonthlyTrendChart';
@@ -55,10 +55,13 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
     setError(null);
 
     try {
- 
+      const formattedData = {
+        ...form,
+        amount: parseFloat(form.amount),
+      };
 
-      //const response = await transactionAPI.create(formattedData);
-      //console.log('Transaction created:', response.data); // Debug log
+      const response = await transactionAPI.create(formattedData);
+      console.log('Transaction created:', response.data); // Debug log
 
       setForm({
         amount: "",
@@ -211,29 +214,7 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
 // Main Dashboard Component
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
   const [showAddTransaction, setShowAddTransaction] = useState(false);
-
-  // State variables
-  const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState({
-    balance: 0,
-    income: 0,
-    expenses: 0,
-    savingsProgress: 0
-  });
-  const [recentTransactions, setRecentTransactions] = useState([]);
-
-  const [categories, setCategories] = useState([
-  'Food & Drink',
-  'Groceries',
-  'Transportation',
-  'Shopping',
-  'Utilities',
-  'Entertainment',
-  'Healthcare',
-  'Other'
-]);
 
   const [monthlyData] = useState([
     { month: 1, income: 5000, expense: 3200, balance: 1800 },
