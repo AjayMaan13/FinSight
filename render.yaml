@@ -77,7 +77,8 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: client/dist
     routes:
-      - path: /*
+      - type: rewrite
+        source: /*
         destination: /index.html
     envVars:
       # Baked into the JS bundle at build time — the browser calls this
