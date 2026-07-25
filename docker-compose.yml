@@ -33,8 +33,9 @@ services:
     restart: unless-stopped
     # Runs the real migrations (and seeds demo data, ignoring failures on
     # reruns where it's already seeded) before starting the API — the same
-    # schema-creation path used in Phase 3's test setup.
-    command: sh -c "npx sequelize db:migrate && (npx sequelize db:seed:all || true) && node server.js"
+    # schema-creation path used in Phase 3's test setup. Logic lives in
+    # docker-entrypoint.sh, shared with the Render deploy.
+    command: ./docker-entrypoint.sh
     environment:
       NODE_ENV: production
       PORT: 5001

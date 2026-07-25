@@ -31,11 +31,12 @@ services:
     dockerfilePath: server/Dockerfile
     dockerContext: server
     healthCheckPath: /
-    # Migrate + seed demo data on every deploy (seed failures on reruns,
-    # e.g. duplicate emails, are ignored), then start the API.
-    dockerCommand: >-
-      sh -c "npx sequelize db:migrate && (npx sequelize db:seed:all || true)
-      && node server.js"
+    # Migrate + seed demo data, then start the API — logic lives in
+    # docker-entrypoint.sh (baked into the image) rather than an inline
+    # multi-command shell string here, since it was unclear exactly how
+    # Render tokenizes/re-wraps dockerCommand and an inline "sh -c '...'"
+    # string got mangled into one unparsed "command not found".
+    dockerCommand: ./docker-entrypoint.sh
     envVars:
       - key: NODE_ENV
         value: production
