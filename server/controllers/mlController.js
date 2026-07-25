@@ -5,7 +5,10 @@
 
 const { Transaction, Budget } = require('../models');
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5002';
+// Some hosts (e.g. Render's fromService "hostport") provide a bare
+// "host:port" with no scheme; normalize it to a full URL either way.
+const rawMlUrl = process.env.ML_SERVICE_URL || 'http://localhost:5002';
+const ML_SERVICE_URL = /^https?:\/\//.test(rawMlUrl) ? rawMlUrl : `http://${rawMlUrl}`;
 const ML_TIMEOUT_MS = 8000;
 
 // Fetch all of a user's transactions in ML-friendly shape.

@@ -1,0 +1,91 @@
+# Render Blueprint — provisions the entire FinSight stack (Postgres, API,
+# ML service, static client) from a single "New Blueprint" deploy.
+# https://render.com/docs/blueprint-spec
+#
+# Free-tier services spin down after inactivity and take ~30-60s to wake on
+# the next request — expected for a demo deployment, not a bug.
+
+databases:
+  - name: finsight-db
+    plan: free
+    databaseName: finsight
+    user: finsight
+
+services:
+  - type: web
+    name: finsight-ml
+    runtime: docker
+    plan: free
+    rootDir: ml-service
+    dockerfilePath: ml-service/Dockerfile
+    dockerContext: ml-service
+    healthCheckPath: /health
+
+  - type: web
+    name: finsight-server
+    runtime: docker
+    plan: free
+    rootDir: server
+    dockerfilePath: server/Dockerfile
+    dockerContext: server
+    healthCheckPath: /
+    # Migrate + seed demo data on every deploy (seed failures on reruns,
+    # e.g. duplicate emails, are ignored), then start the API.
+    dockerCommand: >-
+      sh -c "npx sequelize db:migrate && (npx sequelize db:seed:all || true)
+      && node server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: finsight-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: finsight-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: finsight-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: finsight-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: finsight-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      # Internal private-network address (host:port) — server-to-server
+      # traffic never leaves Render's network, so this stays fast and free.
+      # ml-service reads $PORT itself, so no scheme/port assumptions here;
+      # mlController.js normalizes a bare host:port into a full http:// URL.
+      - key: ML_SERVICE_URL
+        fromService:
+          type: web
+          name: finsight-ml
+          property: hostport
+
+  - type: web
+    name: finsight-client
+    runtime: static
+    plan: free
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: client/dist
+    routes:
+      - path: /*
+        destination: /index.html
+    envVars:
+      # Baked into the JS bundle at build time — the browser calls this
+      # directly, so it must be finsight-server's PUBLIC URL, not the
+      # internal address used above. Render can't self-reference another
+      # service's public onrender.com URL in a Blueprint, so this is
+      # hardcoded to match the "name:" of the server service above. If
+      # Render assigns a different name (e.g. due to a collision), update
+      # this value in the dashboard and redeploy the client.
+      - key: VITE_API_URL
+        value: https://finsight-server.onrender.com/api
