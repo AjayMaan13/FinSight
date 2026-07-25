@@ -41,7 +41,6 @@ const Login = () => {
     try {
       const { email, password } = formData;
       
-      // For demo, any email/password works
       const result = await login({ email, password });
       
       if (!result.success) {
@@ -189,7 +188,7 @@ const Login = () => {
 
             <div className="mt-6">
               <p className="text-center text-sm text-gray-400">
-                For demo, any email and password will work. Just fill in the form and click Sign in.
+                Demo account: <span className="text-gray-300">john@example.com</span> / <span className="text-gray-300">password123</span>
               </p>
             </div>
           </div>
