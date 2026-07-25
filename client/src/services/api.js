@@ -74,6 +74,13 @@ export const budgetAPI = {
   delete: (id) => api.delete(`/budgets/${id}`),
 };
 
+// ML endpoints (backed by the Python ML microservice)
+export const mlAPI = {
+  getForecast: (params) => api.get('/ml/forecast', { params }),
+  getAnomalies: (params) => api.get('/ml/anomalies', { params }),
+  getInsights: () => api.get('/ml/insights'),
+};
+
 // User endpoints
 export const userAPI = {
   updateProfile: (data) => api.put('/users/profile', data),
