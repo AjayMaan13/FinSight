@@ -1,0 +1,73 @@
+# Brings up the whole FinSight stack: Postgres, the Node API, the Python ML
+# microservice, and the client (built and served via nginx). Env vars fall
+# back to demo-safe defaults (see .env.example) so `docker compose up` works
+# out of the box on a fresh clone with no setup.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finsight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finsight}
+      POSTGRES_DB: ${POSTGRES_DB:-finsight}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # exposed for local psql/GUI access, not required by other services (they use the `db` DNS name)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finsight}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ml-service:
+    build: ./ml-service
+    restart: unless-stopped
+    # Published so it can be hit directly for debugging; server still talks
+    # to it over the internal Docker network via ML_SERVICE_URL below.
+    ports:
+      - "5002:5002"
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    # Runs the real migrations (and seeds demo data, ignoring failures on
+    # reruns where it's already seeded) before starting the API — the same
+    # schema-creation path used in Phase 3's test setup.
+    command: sh -c "npx sequelize db:migrate && (npx sequelize db:seed:all || true) && node server.js"
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-finsight}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-finsight}
+      DB_NAME: ${POSTGRES_DB:-finsight}
+      DB_SSL: "false" # local Postgres container doesn't support SSL; managed hosts (Render/Heroku) should leave this unset
+      JWT_SECRET: ${JWT_SECRET:-change_me_to_a_long_random_secret}
+      ML_SERVICE_URL: http://ml-service:5002 # internal Docker DNS name, not the published host port
+    depends_on:
+      db:
+        condition: service_healthy # wait for pg_isready, not just container start, or migrations race the DB
+      ml-service:
+        condition: service_started # no healthcheck dependency: server degrades gracefully (503) if ML isn't ready yet
+    ports:
+      - "5001:5001"
+
+  client:
+    build:
+      context: ./client
+      # VITE_API_URL is compiled into the static JS bundle at build time
+      # (Vite has no server-side runtime), so it must point at the URL the
+      # *browser* will call — the published host port, not the Docker
+      # service name.
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5001/api}
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "5173:80"
+
+volumes:
+  db-data:
