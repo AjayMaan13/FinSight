@@ -16,7 +16,10 @@ services:
     name: finsight-ml
     runtime: docker
     plan: free
-    rootDir: ml-service
+    # No rootDir: dockerfilePath/dockerContext are already fully specified
+    # relative to the repo root, and combining them with a rootDir of the
+    # same subdirectory doubled the path (ml-service/ml-service), which
+    # Render's builder couldn't resolve.
     dockerfilePath: ml-service/Dockerfile
     dockerContext: ml-service
     healthCheckPath: /health
@@ -25,7 +28,6 @@ services:
     name: finsight-server
     runtime: docker
     plan: free
-    rootDir: server
     dockerfilePath: server/Dockerfile
     dockerContext: server
     healthCheckPath: /
@@ -74,7 +76,10 @@ services:
     runtime: static
     rootDir: client
     buildCommand: npm install && npm run build
-    staticPublishPath: client/dist
+    # Relative to rootDir (not the repo root) once rootDir is set — `vite
+    # build` writes to client/dist from the repo root, which is just
+    # "dist" from inside the client/ rootDir.
+    staticPublishPath: dist
     routes:
       - type: rewrite
         source: /*
