@@ -6,7 +6,7 @@ class ResizeObserverMock {
   unobserve() {}
   disconnect() {}
 }
-global.ResizeObserver = global.ResizeObserver || ResizeObserverMock;
+globalThis.ResizeObserver = globalThis.ResizeObserver || ResizeObserverMock;
 
 // jsdom reports 0x0 layout size, which recharts' ResponsiveContainer refuses
 // to render into. Give every element a fixed, non-zero size for tests.

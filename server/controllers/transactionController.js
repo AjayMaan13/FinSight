@@ -188,13 +188,13 @@ exports.getMonthlyTrends = async (req, res) => {
     
     // SQL to get monthly totals
     const query = `
-      SELECT 
+      SELECT
         EXTRACT(MONTH FROM date) as month,
         type,
         SUM(amount) as total
-      FROM "Transactions"
-      WHERE 
-        "userId" = :userId AND
+      FROM "transactions"
+      WHERE
+        "user_id" = :userId AND
         EXTRACT(YEAR FROM date) = :year
       GROUP BY EXTRACT(MONTH FROM date), type
       ORDER BY month

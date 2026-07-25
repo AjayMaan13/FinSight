@@ -1,36 +1,15 @@
 // src/pages/Dashboard.jsx
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useCallback } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import MonthlyTrendChart from '../components/charts/MonthlyTrendChart';
-
-
-
-
-
+import { transactionAPI, goalAPI, mlAPI } from '../services/api';
 
 const handleExport = () => {
   // For now, just show an alert
   // Later you can implement actual CSV export
   alert("Export functionality coming soon!");
 };
-
-// Chart placeholder component
-const ChartPlaceholder = () => (
-  <div className="flex items-center justify-center h-56 bg-gray-800 rounded-lg border border-gray-700">
-    <div className="text-center">
-      <p className="text-gray-400 mb-2">Monthly Spending Trend</p>
-      <div className="relative h-32 w-64">
-        {/* Fake chart bars */}
-        <div className="absolute bottom-0 left-0 w-8 h-16 bg-blue-500 rounded-t-sm"></div>
-        <div className="absolute bottom-0 left-12 w-8 h-24 bg-blue-500 rounded-t-sm"></div>
-        <div className="absolute bottom-0 left-24 w-8 h-12 bg-blue-500 rounded-t-sm"></div>
-        <div className="absolute bottom-0 left-36 w-8 h-28 bg-blue-500 rounded-t-sm"></div>
-        <div className="absolute bottom-0 left-48 w-8 h-20 bg-blue-500 rounded-t-sm"></div>
-      </div>
-    </div>
-  </div>
-);
 
 // Add Transaction Modal Component
 const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
@@ -216,14 +195,50 @@ const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
 
-  const [monthlyData] = useState([
-    { month: 1, income: 5000, expense: 3200, balance: 1800 },
-    { month: 2, income: 5200, expense: 3500, balance: 1700 },
-    { month: 3, income: 4800, expense: 2900, balance: 1900 },
-    { month: 4, income: 5500, expense: 3800, balance: 1700 },
-    { month: 5, income: 5000, expense: 3100, balance: 1900 },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState({ totalIncome: 0, totalExpenses: 0, balance: 0 });
+  const [goalData, setGoalData] = useState({ totalCurrent: 0, totalTarget: 0, overallProgress: 0 });
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [topInsight, setTopInsight] = useState(null);
 
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [summaryRes, goalStatsRes, transactionsRes, trendsRes, insightsRes] = await Promise.all([
+        transactionAPI.getSummary(),
+        goalAPI.getStats(),
+        transactionAPI.getAll({ limit: 5, sort: 'date', order: 'DESC' }),
+        transactionAPI.getMonthlyTrends(),
+        // ML insights are a nice-to-have on this page; don't block the rest
+        // of the dashboard if the ML service is unavailable.
+        mlAPI.getInsights().catch(() => null),
+      ]);
+
+      setSummary(summaryRes.data);
+      setGoalData({
+        totalCurrent: goalStatsRes.data.stats.totalCurrentAmount,
+        totalTarget: goalStatsRes.data.stats.totalTargetAmount,
+        overallProgress: goalStatsRes.data.stats.overallProgress,
+      });
+      setRecentTransactions(transactionsRes.data.transactions);
+      setMonthlyData(trendsRes.data);
+      setTopInsight(insightsRes?.data?.insights?.[0] || null);
+    } catch (err) {
+      console.error('Error loading dashboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  const handleTransactionSuccess = () => {
+    setShowAddTransaction(false);
+    loadDashboard();
+  };
 
   return (
     <div>
@@ -236,7 +251,7 @@ const Dashboard = () => {
                 Welcome back, {user?.firstName || "User"}!
               </h1>
               <p className="mt-1 text-sm text-gray-400">
-                Here's your financial overview for May 2025
+                Here's your financial overview
               </p>
             </div>
             <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -332,7 +347,7 @@ const Dashboard = () => {
                       </dt>
                       <dd>
                         <div className="text-lg font-medium text-white">
-                          ${loading ? '...' : summary.expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          ${loading ? '...' : summary.totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </div>
                       </dd>
                     </dl>
@@ -378,7 +393,7 @@ const Dashboard = () => {
                       </dt>
                       <dd>
                         <div className="text-lg font-medium text-white">
-                          {loading ? '...' : `${summary.savingsProgress}%`}
+                          {loading ? '...' : `${goalData.overallProgress}%`}
                         </div>
                       </dd>
                     </dl>
@@ -388,7 +403,7 @@ const Dashboard = () => {
                   <div className="relative pt-1">
                     <div className="overflow-hidden h-2 mb-1 text-xs flex rounded bg-gray-700">
                       <div
-                        style={{ width: `${summary.savingsProgress}%` }}
+                        style={{ width: `${goalData.overallProgress}%` }}
                         className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"
                       ></div>
                     </div>
@@ -415,20 +430,11 @@ const Dashboard = () => {
 
           {/* Charts and Recent Transactions */}
           <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
-            {/* Chart Section */}
-            
-
-
-
-
-              {/* Category Breakdown */}
-              <div className="bg-gray-800 rounded-lg shadow border border-gray-700 p-6">
-                <h3 className="text-lg font-medium text-white mb-4">Monthly Trends</h3>
-                <MonthlyTrendChart data={monthlyData} />
-              </div>
-
-
-            
+            {/* Category Breakdown */}
+            <div className="bg-gray-800 rounded-lg shadow border border-gray-700 p-6">
+              <h3 className="text-lg font-medium text-white mb-4">Monthly Trends</h3>
+              <MonthlyTrendChart data={monthlyData} />
+            </div>
 
             {/* Recent Transactions */}
             <div className="bg-gray-800 rounded-lg shadow border border-gray-700">
@@ -504,115 +510,42 @@ const Dashboard = () => {
             <h2 className="text-xl font-semibold text-white mb-4">
               AI-Powered Financial Insights
             </h2>
-            <div className="rounded-md bg-blue-900 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-5 w-5 text-blue-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-3 flex-1 md:flex md:justify-between">
-                  <p className="text-sm text-blue-300">
-                    Based on your spending patterns, you could save $250 this
-                    month by reducing restaurant expenses.
-                  </p>
-                  <p className="mt-3 text-sm md:mt-0 md:ml-6">
-                    <Link
-                      to="/insights"
-                      className="whitespace-nowrap font-medium text-blue-400 hover:text-blue-300"
+            {topInsight ? (
+              <div className="rounded-md bg-blue-900 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-blue-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
                     >
-                      Details <span aria-hidden="true">&rarr;</span>
-                    </Link>
-                  </p>
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1 md:flex md:justify-between">
+                    <p className="text-sm text-blue-300">{topInsight.message}</p>
+                    <p className="mt-3 text-sm md:mt-0 md:ml-6">
+                      <Link
+                        to="/insights"
+                        className="whitespace-nowrap font-medium text-blue-400 hover:text-blue-300"
+                      >
+                        Details <span aria-hidden="true">&rarr;</span>
+                      </Link>
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-4">
-              <h3 className="text-lg font-medium text-white mb-2">
-                Coming Soon Features
-              </h3>
-              <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <li className="flex items-center">
-                  <svg
-                    className="h-5 w-5 text-green-500 mr-2"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-gray-300">
-                    Smart spending analysis by category
-                  </span>
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="h-5 w-5 text-green-500 mr-2"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-gray-300">
-                    Budget recommendations based on your habits
-                  </span>
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="h-5 w-5 text-green-500 mr-2"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-gray-300">
-                    Automated detection of unusual transactions
-                  </span>
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="h-5 w-5 text-green-500 mr-2"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-gray-300">
-                    Predictive financial forecasting
-                  </span>
-                </li>
-              </ul>
-            </div>
+            ) : (
+              <p className="text-sm text-gray-400">
+                {loading ? 'Loading insights…' : 'Add a few transactions to unlock personalized insights.'}
+              </p>
+            )}
           </div>
         </div>
       </div>
