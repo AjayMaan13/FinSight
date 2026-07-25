@@ -72,7 +72,6 @@ services:
   - type: web
     name: finsight-client
     runtime: static
-    plan: free
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: client/dist
