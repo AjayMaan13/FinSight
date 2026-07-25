@@ -90,8 +90,11 @@ services:
       # directly, so it must be finsight-server's PUBLIC URL, not the
       # internal address used above. Render can't self-reference another
       # service's public onrender.com URL in a Blueprint, so this is
-      # hardcoded to match the "name:" of the server service above. If
-      # Render assigns a different name (e.g. due to a collision), update
-      # this value in the dashboard and redeploy the client.
+      # hardcoded. Render appended a suffix to the server's name (a
+      # collision with an existing "finsight-server" elsewhere on Render),
+      # so this points at the actual assigned URL, not the plain
+      # "finsight-server.onrender.com" the name: field would suggest. If
+      # the server's URL ever changes, update this value or every request
+      # from the client will silently fail.
       - key: VITE_API_URL
-        value: https://finsight-server.onrender.com/api
+        value: https://finsight-server-0ka4.onrender.com/api
