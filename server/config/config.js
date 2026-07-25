@@ -42,11 +42,16 @@ module.exports = {
       timestamps: true,
       underscored: true
     },
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
+    // Managed Postgres (Render/Heroku/etc.) requires SSL; a local/Docker
+    // Postgres doesn't support it. Default on for real production, but let
+    // it be disabled with DB_SSL=false (e.g. docker-compose's local db).
+    ...(process.env.DB_SSL !== 'false' && {
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
       }
-    }
+    })
   }
 };
