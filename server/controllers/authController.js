@@ -11,24 +11,21 @@ exports.register = async (req, res) => {
 
     // Check if user exists
     const userExists = await User.findOne({ where: { email } });
-    
+
     if (userExists) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User with this email already exists' 
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
       });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user
+    // Password is hashed by the User model's beforeCreate hook — hashing it
+    // here too would double-hash it and break login.
     const user = await User.create({
       firstName,
       lastName,
       email,
-      password: hashedPassword
+      password
     });
 
     // Generate token
