@@ -62,6 +62,13 @@ services:
           property: database
       - key: JWT_SECRET
         generateValue: true
+      # CORS allow-origin for the deployed client. Same caveat as
+      # VITE_API_URL below: Render can't self-reference another service's
+      # public URL, so this is hardcoded to the client's actual assigned
+      # URL (it also got a name-collision suffix). Update if the client's
+      # URL ever changes, or every request will be blocked by CORS.
+      - key: CLIENT_URL
+        value: https://finsight-client-0ji3.onrender.com
       # Internal private-network address (host:port) — server-to-server
       # traffic never leaves Render's network, so this stays fast and free.
       # ml-service reads $PORT itself, so no scheme/port assumptions here;
