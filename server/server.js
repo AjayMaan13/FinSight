@@ -16,6 +16,8 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
 const goalRoutes = require('./routes/goals');
+const budgetRoutes = require('./routes/budgets');
+const mlRoutes = require('./routes/ml');
 
 // Initialize app
 const app = express();
@@ -41,6 +43,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/goals', goalRoutes);
+app.use('/api/budgets', budgetRoutes);
+app.use('/api/ml', mlRoutes);
 
 // Base route
 app.get('/', (req, res) => {
